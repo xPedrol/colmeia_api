@@ -32,6 +32,11 @@ export default async function routes(fastify) {
     return reply.code(201).send(summary);
   });
 
+  fastify.get("/dashboard/sales-summary", async (request, reply) => {
+    const summary = await dashboardRepo.getSalesSummary(request.user.id);
+    return reply.code(201).send(summary);
+  });
+
   // ─── AUTH ──────────────────────────────────────────────────────────────────
 
   fastify.post("/auth/register", async (request, reply) => {

@@ -29,7 +29,7 @@ export default class DashboardRepository {
                      (a.total_honey_supers+v.total_new_honey_super-v.total_removed_honey_super) AS total_honey_supers
                      FROM visit_totals v
                      FULL JOIN apiary_counts a ON v.user_id = a.user_id
-                     WHERE COALESCE(v.user_id, a.user_id) = $1
+                     WHERE COALESCE(v.user_id, a.user_id) = $1::uuid
                      `,
       [userId],
     );
@@ -46,12 +46,26 @@ export default class DashboardRepository {
               COALESCE(SUM(removed_swarm), 0) AS total_removed_swarm,
               COALESCE(SUM(removed_honey_super), 0) AS total_removed_honey_super
         FROM visits
-        WHERE user_id = $1
+        WHERE user_id = $1::uuid
         GROUP BY TO_CHAR(date, 'Mon')
         ORDER BY TO_CHAR(date, 'Mon') DESC
       `,
       [userId],
     );
     return rows;
+  }
+
+  async getSalesSummary(userId) {
+    const { rows } = await this._db.query(
+      `
+     SELECT
+      $1::uuid AS user_id,
+    COALESCE((SELECT SUM(value) FROM expenses e WHERE e.user_id = $1), 0) AS total_expenses,
+    COALESCE((SELECT SUM(amount) FROM sales s WHERE s.user_id = $1), 0) AS total_sales,
+    COALESCE((SELECT SUM(value) FROM sales s WHERE s.user_id = $1), 0) AS total_value;
+      `,
+      [userId],
+    );
+    return rows[0];
   }
 }
