@@ -5,6 +5,7 @@ import SaleRepository from "./repositories/sale.js";
 import UserRepository from "./repositories/user.js";
 import VisitRepository from "./repositories/visit.js";
 import { comparePassword, hashPassword } from "./utils/bcrypt.js";
+import DashboardRepository from "./repositories/dashboard.js";
 
 export default async function routes(fastify) {
   const userRepo = new UserRepository(fastify.pg);
@@ -13,9 +14,16 @@ export default async function routes(fastify) {
   const expenseCategoryRepo = new ExpenseCategoryRepository(fastify.pg);
   const expenseRepo = new ExpenseRepository(fastify.pg);
   const saleRepo = new SaleRepository(fastify.pg);
+  const dashboardRepo = new DashboardRepository(fastify.pg);
 
   fastify.get("/", async (request, reply) => {
     return { message: "Colmeia API is running!" };
+  });
+
+  // ─── DASHBOARD ────────────────────────────────────────────────────────────
+  fastify.get("/dashboard/summary", async (request, reply) => {
+    const summary = await dashboardRepo.getSummary(request.user.id);
+    return reply.code(201).send(summary);
   });
 
   // ─── AUTH ──────────────────────────────────────────────────────────────────
