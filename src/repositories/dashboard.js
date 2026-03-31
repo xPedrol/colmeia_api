@@ -48,7 +48,7 @@ export default class DashboardRepository {
         FROM visits
         WHERE user_id = $1
         GROUP BY TO_CHAR(date, 'Mon')
-        ORDER BY TO_CHAR(date, 'Mon')
+        ORDER BY TO_CHAR(date, 'Mon') DESC
       `,
       [userId],
     );
