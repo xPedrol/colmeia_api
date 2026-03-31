@@ -15,7 +15,7 @@ export default class DashboardRepository {
                         COALESCE(SUM(removed_swarm), 0)       AS total_removed_swarm,
                         COALESCE(SUM(removed_honey_super), 0) AS total_removed_honey_super
               FROM visits
-              GROUP BY user_id
+              GROUP BY user_id 
             )
            , apiary_counts AS (
               SELECT 
