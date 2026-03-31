@@ -14,6 +14,10 @@ export default async function routes(fastify) {
   const expenseRepo = new ExpenseRepository(fastify.pg);
   const saleRepo = new SaleRepository(fastify.pg);
 
+  fastify.get("/", async (request, reply) => {
+    return { message: "Colmeia API is running!" };
+  });
+
   // ─── AUTH ──────────────────────────────────────────────────────────────────
 
   fastify.post("/auth/register", async (request, reply) => {

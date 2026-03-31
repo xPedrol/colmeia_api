@@ -5,7 +5,7 @@ import fastifyPostgress from "@fastify/postgres";
  * @param {FastifyInstance} fastify
  * @param {Object} options
  */
-async function dbConnector(fastify) {
+async function dbConnector(fastify, options) {
   fastify.register(fastifyPostgress, {
     connectionString: fastify.config.DATABASE_URL,
   });
