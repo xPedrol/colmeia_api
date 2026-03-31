@@ -43,6 +43,19 @@ export default class DashboardRepository {
                      `,
       [userId],
     );
+    if (rows.length === 0) {
+      return {
+        user_id: userId,
+        total_visits: 0,
+        total_new_swarm: 0,
+        total_new_honey_super: 0,
+        total_removed_swarm: 0,
+        total_removed_honey_super: 0,
+        total_apiaries: 0,
+        initial_swarms: 0,
+        initial_honey_supers: 0,
+      };
+    }
     return rows[0];
   }
 
@@ -76,6 +89,14 @@ export default class DashboardRepository {
       `,
       [userId],
     );
+    if (rows.length === 0) {
+      return {
+        user_id: userId,
+        total_expenses: 0,
+        total_amount_sales: 0,
+        total_value_sales: 0,
+      };
+    }
     return rows[0];
   }
 }
