@@ -6,7 +6,26 @@ export default class ApiaryRepository {
 
   async getAll(userId) {
     const { rows } = await this._db.query(
-      "SELECT * FROM apiaries WHERE user_id = $1 ORDER BY created_at DESC",
+      `WITH visit_totals AS (
+         SELECT apiary_id,
+                COUNT(*)                AS total_visits,
+                SUM(new_swarm)           AS total_new_swarm,
+                SUM(new_honey_super)     AS total_new_honey_super,
+                SUM(removed_swarm)       AS total_removed_swarm,
+                SUM(removed_honey_super) AS total_removed_honey_super
+         FROM visits
+         GROUP BY apiary_id
+       )
+       SELECT ap.*,
+              COALESCE(v.total_visits, 0)                AS total_visits,
+              COALESCE(v.total_new_swarm, 0)           AS total_new_swarm,
+              COALESCE(v.total_new_honey_super, 0)     AS total_new_honey_super,
+              COALESCE(v.total_removed_swarm, 0)       AS total_removed_swarm,
+              COALESCE(v.total_removed_honey_super, 0) AS total_removed_honey_super
+       FROM apiaries ap
+       LEFT JOIN visit_totals v ON v.apiary_id = ap.id
+       WHERE ap.user_id = $1
+       ORDER BY (total_removed_honey_super) DESC`,
       [userId],
     );
     return rows;
@@ -14,7 +33,7 @@ export default class ApiaryRepository {
 
   async getById(id, userId) {
     const { rows: apiaryRows } = await this._db.query(
-      "SELECT * FROM apiaries WHERE id = $1 AND user_id = $2",
+      "WITH visit_totals AS (SELECT apiary_id, SUM(new_swarm) AS total_new_swarm, SUM(new_honey_super) AS total_new_honey_super, SUM(removed_swarm) AS total_removed_swarm, SUM(removed_honey_super) AS total_removed_honey_super FROM visits GROUP BY apiary_id) SELECT ap.*, COALESCE(v.total_new_swarm, 0) AS total_new_swarm, COALESCE(v.total_new_honey_super, 0) AS total_new_honey_super, COALESCE(v.total_removed_swarm, 0) AS total_removed_swarm, COALESCE(v.total_removed_honey_super, 0) AS total_removed_honey_super FROM apiaries ap LEFT JOIN visit_totals v ON v.apiary_id = ap.id WHERE ap.id = $1 AND ap.user_id = $2",
       [id, userId],
     );
     const apiary = apiaryRows[0] ?? null;

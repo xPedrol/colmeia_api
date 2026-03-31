@@ -9,7 +9,7 @@ import routes from "./routes.js";
 dotenv.config();
 
 const fastify = Fastify({
-  logger: false,
+  logger: true,
 });
 fastify.register(jwt, {
   secret: process.env.JWT_SECRET || "",
@@ -25,7 +25,10 @@ if (!process.env.PORT) {
 
 // Run the server!
 try {
-  await fastify.listen({ port: process.env.PORT });
+  await fastify.listen({
+    port: Number(process.env.PORT),
+    host: process.env.HOST || "0.0.0.0",
+  });
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);

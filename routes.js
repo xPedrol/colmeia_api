@@ -1,8 +1,10 @@
 import ApiaryRepository from "./repositories/apiary.js";
 import ExpenseCategoryRepository from "./repositories/expenseCategory.js";
 import ExpenseRepository from "./repositories/expense.js";
+import SaleRepository from "./repositories/sale.js";
 import UserRepository from "./repositories/user.js";
 import VisitRepository from "./repositories/visit.js";
+import { comparePassword, hashPassword } from "./utils/bcrypt.js";
 
 export default async function routes(fastify) {
   const userRepo = new UserRepository(fastify.pg);
@@ -10,6 +12,7 @@ export default async function routes(fastify) {
   const visitRepo = new VisitRepository(fastify.pg);
   const expenseCategoryRepo = new ExpenseCategoryRepository(fastify.pg);
   const expenseRepo = new ExpenseRepository(fastify.pg);
+  const saleRepo = new SaleRepository(fastify.pg);
 
   // ─── AUTH ──────────────────────────────────────────────────────────────────
 
@@ -17,7 +20,8 @@ export default async function routes(fastify) {
     const { name, email, password } = request.body;
     const existing = await userRepo.getUserByEmail(email);
     if (existing) return reply.code(409).send({ error: "Email já cadastrado" });
-    const user = await userRepo.createUser(name, email, password);
+    const hashedPassword = await hashPassword(password);
+    const user = await userRepo.createUser(name, email, hashedPassword);
     const token = fastify.jwt.sign({ id: user.id, email: user.email });
     return reply.code(201).send({
       token,
@@ -27,8 +31,12 @@ export default async function routes(fastify) {
 
   fastify.post("/auth/login", async (request, reply) => {
     const { email, password } = request.body;
-    const user = await userRepo.getUserByEmailAndPassword(email, password);
+    const user = await userRepo.getUserByEmail(email);
     if (!user) return reply.code(401).send({ error: "Credenciais inválidas" });
+    const isPasswordValid = await comparePassword(password, user.password);
+    if (!isPasswordValid)
+      return reply.code(401).send({ error: "Credenciais inválidas" });
+
     const token = fastify.jwt.sign({ id: user.id, email: user.email });
     return reply.send({
       token,
@@ -77,8 +85,14 @@ export default async function routes(fastify) {
   });
 
   fastify.post("/apiaries", async (request, reply) => {
+    const { name, location, swarm, honey_super, image_link } = request.body;
+
     const apiary = await apiaryRepo.create({
-      ...request.body,
+      name,
+      location,
+      swarm,
+      honey_super,
+      image_link,
       user_id: request.user.id,
     });
     return reply.code(201).send(apiary);
@@ -228,6 +242,45 @@ export default async function routes(fastify) {
     );
     if (!deleted)
       return reply.code(404).send({ error: "Gasto não encontrado" });
+    return reply.code(204).send();
+  });
+
+  // ─── SALES ───────────────────────────────────────────────────────────────
+
+  fastify.get("/sales", async (request, reply) => {
+    return saleRepo.getAll(request.user.id);
+  });
+
+  fastify.get("/sales/:id", async (request, reply) => {
+    const sale = await saleRepo.getById(request.params.id, request.user.id);
+    if (!sale)
+      return reply.code(404).send({ error: "Venda não encontrada" });
+    return sale;
+  });
+
+  fastify.post("/sales", async (request, reply) => {
+    const sale = await saleRepo.create({
+      ...request.body,
+      user_id: request.user.id,
+    });
+    return reply.code(201).send(sale);
+  });
+
+  fastify.put("/sales/:id", async (request, reply) => {
+    const sale = await saleRepo.update(
+      request.params.id,
+      request.user.id,
+      request.body,
+    );
+    if (!sale)
+      return reply.code(404).send({ error: "Venda não encontrada" });
+    return sale;
+  });
+
+  fastify.delete("/sales/:id", async (request, reply) => {
+    const deleted = await saleRepo.delete(request.params.id, request.user.id);
+    if (!deleted)
+      return reply.code(404).send({ error: "Venda não encontrada" });
     return reply.code(204).send();
   });
 }
