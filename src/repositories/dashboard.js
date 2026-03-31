@@ -61,8 +61,8 @@ export default class DashboardRepository {
      SELECT
       $1::uuid AS user_id,
     COALESCE((SELECT SUM(value) FROM expenses e WHERE e.user_id = $1), 0) AS total_expenses,
-    COALESCE((SELECT SUM(amount) FROM sales s WHERE s.user_id = $1), 0) AS total_sales,
-    COALESCE((SELECT SUM(value) FROM sales s WHERE s.user_id = $1), 0) AS total_value;
+    COALESCE((SELECT SUM(amount) FROM sales s WHERE s.user_id = $1), 0) AS total_amount_sales,
+    COALESCE((SELECT SUM(value) FROM sales s WHERE s.user_id = $1), 0) AS total_value_sales;
       `,
       [userId],
     );
