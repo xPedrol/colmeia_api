@@ -18,15 +18,25 @@ export default class DashboardRepository {
               GROUP BY user_id
             )
            , apiary_counts AS (
-              SELECT user_id, COUNT(*) AS total_apiaries, COALESCE(SUM(swarm), 0) AS total_swarms, COALESCE(SUM(honey_super), 0) AS total_honey_supers
+              SELECT 
+              user_id, 
+              COUNT(*) AS total_apiaries, 
+              COALESCE(SUM(swarm), 0) AS total_swarms, 
+              COALESCE(SUM(honey_super), 0) AS total_honey_supers
               FROM apiaries
               GROUP BY user_id
               )
               SELECT
+              
                      COALESCE(v.user_id, a.user_id) AS user_id,
                      COALESCE(v.total_visits, 0) AS total_visits,
-                     (a.total_swarms+v.total_new_swarm-v.total_removed_swarm) AS total_swarms,
-                     (a.total_honey_supers+v.total_new_honey_super-v.total_removed_honey_super) AS total_honey_supers
+                      COALESCE(v.total_new_swarm, 0) AS total_new_swarm,
+                      COALESCE(v.total_new_honey_super, 0) AS total_new_honey_super,
+                      COALESCE(v.total_removed_swarm, 0) AS total_removed_swarm,
+                      COALESCE(v.total_removed_honey_super, 0) AS total_removed_honey_super,
+                      COALESCE(a.total_apiaries, 0) AS total_apiaries,
+                      COALESCE(a.total_swarms, 0) AS initial_swarms,
+                      COALESCE(a.total_honey_supers, 0) AS initial_honey_supers
                      FROM visit_totals v
                      FULL JOIN apiary_counts a ON v.user_id = a.user_id
                      WHERE COALESCE(v.user_id, a.user_id) = $1::uuid
