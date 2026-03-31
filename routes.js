@@ -253,8 +253,7 @@ export default async function routes(fastify) {
 
   fastify.get("/sales/:id", async (request, reply) => {
     const sale = await saleRepo.getById(request.params.id, request.user.id);
-    if (!sale)
-      return reply.code(404).send({ error: "Venda não encontrada" });
+    if (!sale) return reply.code(404).send({ error: "Venda não encontrada" });
     return sale;
   });
 
@@ -272,8 +271,7 @@ export default async function routes(fastify) {
       request.user.id,
       request.body,
     );
-    if (!sale)
-      return reply.code(404).send({ error: "Venda não encontrada" });
+    if (!sale) return reply.code(404).send({ error: "Venda não encontrada" });
     return sale;
   });
 

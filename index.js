@@ -1,34 +1,32 @@
-// Import the framework and instantiate it
-import dotenv from "dotenv";
+import fastifyEnv from "@fastify/env";
 import jwt from "@fastify/jwt";
 import Fastify from "fastify";
 import database from "./database.js";
 import middlewares from "./middlewares.js";
 import routes from "./routes.js";
 
-dotenv.config();
+const fastify = Fastify({ logger: true });
 
-const fastify = Fastify({
-  logger: true,
+await fastify.register(fastifyEnv, {
+  schema: {
+    type: "object",
+    required: ["PORT", "DATABASE_URL", "JWT_SECRET"],
+    properties: {
+      PORT: { type: "integer" },
+      DATABASE_URL: { type: "string" },
+      JWT_SECRET: { type: "string" },
+    },
+  },
+  dotenv: true,
 });
-fastify.register(jwt, {
-  secret: process.env.JWT_SECRET || "",
-});
+
+fastify.register(jwt, { secret: fastify.config.JWT_SECRET });
 fastify.register(database);
 fastify.register(middlewares);
 fastify.register(routes);
 
-if (!process.env.PORT) {
-  console.error("PORT is not set in the environment variables.");
-  process.exit(1);
-}
-
-// Run the server!
 try {
-  await fastify.listen({
-    port: Number(process.env.PORT),
-    host: process.env.HOST || "0.0.0.0",
-  });
+  await fastify.listen({ port: fastify.config.PORT });
 } catch (err) {
   fastify.log.error(err);
   process.exit(1);
