@@ -35,4 +35,23 @@ export default class DashboardRepository {
     );
     return rows[0];
   }
+
+  async getMonthlySummary(userId) {
+    const { rows } = await this._db.query(
+      `SELECT
+              TO_CHAR(date, 'Mon') AS month,
+              COUNT(*) AS total_visits,
+              COALESCE(SUM(new_swarm), 0) AS total_new_swarm,
+              COALESCE(SUM(new_honey_super), 0) AS total_new_honey_super,
+              COALESCE(SUM(removed_swarm), 0) AS total_removed_swarm,
+              COALESCE(SUM(removed_honey_super), 0) AS total_removed_honey_super
+        FROM visits
+        WHERE user_id = $1
+        GROUP BY TO_CHAR(date, 'Mon')
+        ORDER BY TO_CHAR(date, 'Mon')
+      `,
+      [userId],
+    );
+    return rows;
+  }
 }

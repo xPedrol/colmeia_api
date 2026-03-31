@@ -21,8 +21,14 @@ export default async function routes(fastify) {
   });
 
   // ─── DASHBOARD ────────────────────────────────────────────────────────────
+
   fastify.get("/dashboard/summary", async (request, reply) => {
     const summary = await dashboardRepo.getSummary(request.user.id);
+    return reply.code(201).send(summary);
+  });
+
+  fastify.get("/dashboard/monthly-summary", async (request, reply) => {
+    const summary = await dashboardRepo.getMonthlySummary(request.user.id);
     return reply.code(201).send(summary);
   });
 
