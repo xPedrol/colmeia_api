@@ -5,23 +5,13 @@ import Fastify from "fastify";
 import database from "./database.js";
 import middlewares from "./middlewares.js";
 import routes from "./routes.js";
+import { config } from "./envConfig.js";
 
 const fastify = Fastify({
   logger: true,
 });
 
-await fastify.register(fastifyEnv, {
-  confKey: "config",
-  schema: {
-    type: "object",
-    required: ["JWT_SECRET", "DATABASE_URL"],
-    properties: {
-      JWT_SECRET: { type: "string" },
-      DATABASE_URL: { type: "string" },
-    },
-  },
-  dotenv: true,
-});
+await fastify.register(fastifyEnv, config);
 
 fastify.register(jwt, {
   secret: fastify.config.JWT_SECRET,

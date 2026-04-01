@@ -6,9 +6,26 @@ import UserRepository from "./repositories/user.js";
 import VisitRepository from "./repositories/visit.js";
 import { comparePassword, hashPassword } from "./utils/bcrypt.js";
 import DashboardRepository from "./repositories/dashboard.js";
+import MailService from "./services/mail.js";
+import {
+  compareResetCode,
+  generateResetCode,
+  getResetCodeExpiryDate,
+  hashResetCode,
+  isResetCodeExpired,
+  MAX_RESET_CODE_ATTEMPTS,
+} from "./utils/passwordResetCode.js";
 
 export default async function routes(fastify) {
-  const userRepo = new UserRepository(fastify.pg);
+  const mailService = new MailService({
+    host: fastify.config.SMTP_HOST,
+    port: fastify.config.SMTP_PORT,
+    user: fastify.config.SMTP_USER,
+    pass: fastify.config.SMTP_PASS,
+    from: fastify.config.SMTP_FROM,
+  });
+
+  const userRepo = new UserRepository(fastify.pg, mailService);
   const apiaryRepo = new ApiaryRepository(fastify.pg);
   const visitRepo = new VisitRepository(fastify.pg);
   const expenseCategoryRepo = new ExpenseCategoryRepository(fastify.pg);
@@ -65,6 +82,65 @@ export default async function routes(fastify) {
       token,
       user: { id: user.id, name: user.name, email: user.email },
     });
+  });
+
+  fastify.post("/auth/request-password-reset", async (request, reply) => {
+    const { email } = request.body;
+    const user = await userRepo.getUserByEmail(email);
+    if (!user)
+      return reply
+        .code(404)
+        .send({ error: "Usuário com esse email não encontrado" });
+    const code = generateResetCode();
+    const codeHash = await hashResetCode(code);
+    const expiresAt = getResetCodeExpiryDate();
+
+    await userRepo.setPasswordResetCode(email, codeHash, expiresAt);
+
+    await userRepo.sendResetPasswordEmail(email, code);
+    return reply.send({ message: "Email de redefinição enviado" });
+  });
+
+  fastify.post("/auth/reset-password", async (request, reply) => {
+    const { email, code, newPassword } = request.body;
+    const user = await userRepo.getUserByEmail(email);
+    if (!user)
+      return reply
+        .code(404)
+        .send({ error: "Usuário com esse email não encontrado" });
+
+    const resetCodeHash = user.reset_code_hash;
+    const resetCodeExpiresAt = user.reset_code_expires_at;
+    const resetCodeAttempts = user.reset_code_attempts ?? 0;
+
+    if (!resetCodeHash || !resetCodeExpiresAt) {
+      return reply.code(400).send({ error: "Código inválido ou expirado" });
+    }
+
+    if (resetCodeAttempts >= MAX_RESET_CODE_ATTEMPTS) {
+      return reply
+        .code(429)
+        .send({
+          error: "Limite de tentativas excedido. Solicite um novo código.",
+        });
+    }
+
+    if (isResetCodeExpired(resetCodeExpiresAt)) {
+      await userRepo.clearPasswordResetCode(email);
+      return reply.code(400).send({ error: "Código inválido ou expirado" });
+    }
+
+    const isCodeValid = await compareResetCode(code, resetCodeHash);
+    if (!isCodeValid) {
+      await userRepo.incrementResetCodeAttempts(email);
+      return reply.code(400).send({ error: "Código inválido ou expirado" });
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+    await userRepo.resetPassword(email, hashedPassword);
+    await userRepo.clearPasswordResetCode(email);
+
+    return reply.send({ message: "Senha redefinida com sucesso" });
   });
 
   // ─── USERS ─────────────────────────────────────────────────────────────────

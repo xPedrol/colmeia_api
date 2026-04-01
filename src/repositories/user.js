@@ -1,7 +1,9 @@
 export default class UserRepository {
   _db;
-  constructor(db) {
+  emailService;
+  constructor(db, mailService) {
     this._db = db;
+    this.emailService = mailService;
   }
 
   async getAllUsers() {
@@ -51,5 +53,46 @@ export default class UserRepository {
   async deleteUser(id) {
     await this._db.query("DELETE FROM users WHERE id = $1", [id]);
     return true;
+  }
+
+  async sendResetPasswordEmail(email, code) {
+    await this.emailService.sendEmail(
+      email,
+      "Redefinição de senha",
+      `<p>Use o seguinte código para redefinir sua senha (válido por 10 minutos): <strong>${code}</strong></p>`,
+    );
+    return true;
+  }
+
+  async setPasswordResetCode(email, codeHash, expiresAt) {
+    const { rows } = await this._db.query(
+      "UPDATE users SET reset_code_hash = $1, reset_code_expires_at = $2, reset_code_attempts = 0 WHERE email = $3 RETURNING *",
+      [codeHash, expiresAt, email],
+    );
+    return rows[0] ?? null;
+  }
+
+  async incrementResetCodeAttempts(email) {
+    const { rows } = await this._db.query(
+      "UPDATE users SET reset_code_attempts = reset_code_attempts + 1 WHERE email = $1 RETURNING reset_code_attempts",
+      [email],
+    );
+    return rows[0]?.reset_code_attempts ?? 0;
+  }
+
+  async clearPasswordResetCode(email) {
+    await this._db.query(
+      "UPDATE users SET reset_code_hash = NULL, reset_code_expires_at = NULL, reset_code_attempts = 0 WHERE email = $1",
+      [email],
+    );
+    return true;
+  }
+
+  async resetPassword(email, newPassword) {
+    const { rows } = await this._db.query(
+      "UPDATE users SET password = $1 WHERE email = $2 RETURNING *",
+      [newPassword, email],
+    );
+    return rows[0];
   }
 }
