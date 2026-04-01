@@ -6,6 +6,7 @@ export default class MailService {
 
   constructor({ host, port, user, pass, from }) {
     this._from = from || user;
+
     this._transporter = nodemailer.createTransport({
       host,
       port,
