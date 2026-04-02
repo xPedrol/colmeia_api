@@ -34,6 +34,7 @@ export default async function routes(fastify) {
   const saleRepo = new SaleRepository(fastify.pg);
   const dashboardRepo = new DashboardRepository(fastify.pg);
   const newsScrapper = new NewsScrapper(
+    "https://globorural.globo.com/ultimas-noticias/",
     "https://revistacultivar.com.br/noticias?categoria=apicultura",
     "https://ecoa.org.br/tag/apicultura/",
   );
