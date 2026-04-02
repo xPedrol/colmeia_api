@@ -34,7 +34,13 @@ async function scrapeApicultura() {
 
     let title = clean($article.find("h3").first().text());
     if (!title) title = clean($article.find("h2").first().text());
-    const articleLink = absoluteUrl($article.find("a").first().attr("href"));
+    const articleLink = absoluteUrl(
+      $article
+        .find("a")
+        .toArray()
+        .map((anchor) => $(anchor).attr("href"))
+        .find((href) => href?.includes("/noticias/")),
+    );
     const description = clean($article.find("p").first().text());
     const image = absoluteUrl($article.find("picture img").first().attr("src"));
 
