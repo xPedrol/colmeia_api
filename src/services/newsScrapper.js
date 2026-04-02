@@ -34,6 +34,7 @@ async function scrapeApicultura() {
 
     let title = clean($article.find("h3").first().text());
     if (!title) title = clean($article.find("h2").first().text());
+    const articleLink = absoluteUrl($article.find("a").first().attr("href"));
     const description = clean($article.find("p").first().text());
     const image = absoluteUrl($article.find("picture img").first().attr("src"));
 
@@ -44,6 +45,7 @@ async function scrapeApicultura() {
       descricao: description || null,
       imagem: image || null,
       numeration: cards.length + 1,
+      link: articleLink || null,
     });
   });
 
