@@ -18,6 +18,18 @@ import {
 } from "./utils/passwordResetCode.js";
 
 export default async function routes(fastify) {
+  const getYearFromBody = (request) => {
+    console.log("Request body:", request?.body?.year || request?.query?.year);
+    const parsedYear = Number.parseInt(
+      request?.body?.year || request?.query?.year,
+      10,
+    );
+    if (Number.isInteger(parsedYear) && parsedYear > 0) {
+      return parsedYear;
+    }
+    return new Date().getFullYear();
+  };
+
   const mailService = new MailService({
     host: fastify.config.SMTP_HOST,
     port: fastify.config.SMTP_PORT,
@@ -46,17 +58,29 @@ export default async function routes(fastify) {
   // ─── DASHBOARD ────────────────────────────────────────────────────────────
 
   fastify.get("/dashboard/summary", async (request, reply) => {
-    const summary = await dashboardRepo.getSummary(request.user.id);
+    const year = getYearFromBody(request);
+    const summary = await dashboardRepo.getSummary(request.user.id, year);
     return reply.code(201).send(summary);
   });
 
   fastify.get("/dashboard/monthly-summary", async (request, reply) => {
-    const summary = await dashboardRepo.getMonthlySummary(request.user.id);
+    const year = getYearFromBody(request);
+    const summary = await dashboardRepo.getMonthlySummary(
+      request.user.id,
+      year,
+    );
+    return reply.code(201).send(summary);
+  });
+
+  fastify.get("/dashboard/monthly-visits", async (request, reply) => {
+    const year = getYearFromBody(request);
+    const summary = await dashboardRepo.getMonthlyVisits(request.user.id, year);
     return reply.code(201).send(summary);
   });
 
   fastify.get("/dashboard/sales-summary", async (request, reply) => {
-    const summary = await dashboardRepo.getSalesSummary(request.user.id);
+    const year = getYearFromBody(request);
+    const summary = await dashboardRepo.getSalesSummary(request.user.id, year);
     return reply.code(201).send(summary);
   });
 
@@ -177,11 +201,17 @@ export default async function routes(fastify) {
   // ─── APIARIES ──────────────────────────────────────────────────────────────
 
   fastify.get("/apiaries", async (request, reply) => {
-    return apiaryRepo.getAll(request.user.id);
+    const year = getYearFromBody(request);
+    return apiaryRepo.getAll(request.user.id, year);
   });
 
   fastify.get("/apiaries/:id", async (request, reply) => {
-    const apiary = await apiaryRepo.getById(request.params.id, request.user.id);
+    const year = getYearFromBody(request);
+    const apiary = await apiaryRepo.getById(
+      request.params.id,
+      request.user.id,
+      year,
+    );
     if (!apiary)
       return reply.code(404).send({ error: "Apiário não encontrado" });
     return apiary;
@@ -222,13 +252,20 @@ export default async function routes(fastify) {
   // ─── VISITS ────────────────────────────────────────────────────────────────
 
   fastify.get("/visits", async (request, reply) => {
+    const year = getYearFromBody(request);
     const { apiary_id } = request.query;
-    if (apiary_id) return visitRepo.getByApiary(apiary_id, request.user.id);
-    return visitRepo.getAll(request.user.id);
+    if (apiary_id)
+      return visitRepo.getByApiary(apiary_id, request.user.id, year);
+    return visitRepo.getAll(request.user.id, year);
   });
 
   fastify.get("/visits/:id", async (request, reply) => {
-    const visit = await visitRepo.getById(request.params.id, request.user.id);
+    const year = getYearFromBody(request);
+    const visit = await visitRepo.getById(
+      request.params.id,
+      request.user.id,
+      year,
+    );
     if (!visit) return reply.code(404).send({ error: "Visita não encontrada" });
     return visit;
   });
@@ -306,13 +343,16 @@ export default async function routes(fastify) {
   // ─── EXPENSES ──────────────────────────────────────────────────────────────
 
   fastify.get("/expenses", async (request, reply) => {
-    return expenseRepo.getAll(request.user.id);
+    const year = getYearFromBody(request);
+    return expenseRepo.getAll(request.user.id, year);
   });
 
   fastify.get("/expenses/:id", async (request, reply) => {
+    const year = getYearFromBody(request);
     const expense = await expenseRepo.getById(
       request.params.id,
       request.user.id,
+      year,
     );
     if (!expense)
       return reply.code(404).send({ error: "Gasto não encontrado" });
@@ -351,11 +391,17 @@ export default async function routes(fastify) {
   // ─── SALES ───────────────────────────────────────────────────────────────
 
   fastify.get("/sales", async (request, reply) => {
-    return saleRepo.getAll(request.user.id);
+    const year = getYearFromBody(request);
+    return saleRepo.getAll(request.user.id, year);
   });
 
   fastify.get("/sales/:id", async (request, reply) => {
-    const sale = await saleRepo.getById(request.params.id, request.user.id);
+    const year = getYearFromBody(request);
+    const sale = await saleRepo.getById(
+      request.params.id,
+      request.user.id,
+      year,
+    );
     if (!sale) return reply.code(404).send({ error: "Venda não encontrada" });
     return sale;
   });

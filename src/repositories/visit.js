@@ -4,26 +4,39 @@ export default class VisitRepository {
     this._db = db;
   }
 
-  async getAll(userId) {
+  async getAll(userId, year = new Date().getFullYear()) {
     const { rows } = await this._db.query(
-      "SELECT * FROM visits WHERE user_id = $1 ORDER BY date DESC",
-      [userId],
+      `SELECT *
+       FROM visits
+       WHERE user_id = $1
+         AND EXTRACT(YEAR FROM date) = $2
+       ORDER BY date DESC`,
+      [userId, year],
     );
     return rows;
   }
 
-  async getByApiary(apiaryId, userId) {
+  async getByApiary(apiaryId, userId, year = new Date().getFullYear()) {
     const { rows } = await this._db.query(
-      "SELECT * FROM visits WHERE apiary_id = $1 AND user_id = $2 ORDER BY date DESC",
-      [apiaryId, userId],
+      `SELECT *
+       FROM visits
+       WHERE apiary_id = $1
+         AND user_id = $2
+         AND EXTRACT(YEAR FROM date) = $3
+       ORDER BY date DESC`,
+      [apiaryId, userId, year],
     );
     return rows;
   }
 
-  async getById(id, userId) {
+  async getById(id, userId, year = new Date().getFullYear()) {
     const { rows } = await this._db.query(
-      "SELECT * FROM visits WHERE id = $1 AND user_id = $2",
-      [id, userId],
+      `SELECT *
+       FROM visits
+       WHERE id = $1
+         AND user_id = $2
+         AND EXTRACT(YEAR FROM date) = $3`,
+      [id, userId, year],
     );
     return rows[0] ?? null;
   }

@@ -4,25 +4,28 @@ export default class ExpenseRepository {
     this._db = db;
   }
 
-  async getAll(userId) {
+  async getAll(userId, year = new Date().getFullYear()) {
     const { rows } = await this._db.query(
       `SELECT e.*, ec.name AS category_name
        FROM expenses e
        LEFT JOIN expense_categories ec ON e.category_id = ec.id
        WHERE e.user_id = $1
+         AND EXTRACT(YEAR FROM e.date) = $2
        ORDER BY e.date DESC`,
-      [userId],
+      [userId, year],
     );
     return rows;
   }
 
-  async getById(id, userId) {
+  async getById(id, userId, year = new Date().getFullYear()) {
     const { rows: expenseRows } = await this._db.query(
       `SELECT e.*, ec.name AS category_name
        FROM expenses e
        LEFT JOIN expense_categories ec ON e.category_id = ec.id
-       WHERE e.id = $1 AND e.user_id = $2`,
-      [id, userId],
+       WHERE e.id = $1
+         AND e.user_id = $2
+         AND EXTRACT(YEAR FROM e.date) = $3`,
+      [id, userId, year],
     );
     const expense = expenseRows[0] ?? null;
     if (!expense) return null;
