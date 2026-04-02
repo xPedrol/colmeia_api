@@ -1,3 +1,6 @@
+import { passwordResetTemplate } from "../templates/passwordReset.js";
+import { LOGO_PATH, LOGO_CID } from "../templates/base.js";
+
 export default class UserRepository {
   _db;
   emailService;
@@ -55,11 +58,13 @@ export default class UserRepository {
     return true;
   }
 
-  async sendResetPasswordEmail(email, code) {
+  async sendResetPasswordEmail(email, code, userName) {
+    const html = passwordResetTemplate({ code, userName });
     await this.emailService.sendEmail(
       email,
-      "Redefinição de senha",
-      `<p>Use o seguinte código para redefinir sua senha (válido por 10 minutos): <strong>${code}</strong></p>`,
+      "Recuperar Senha — Colmeia Pro",
+      html,
+      [{ filename: "logo.png", path: LOGO_PATH, cid: LOGO_CID }],
     );
     return true;
   }

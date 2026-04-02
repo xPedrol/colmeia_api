@@ -18,12 +18,13 @@ export default class MailService {
     });
   }
 
-  async sendEmail(to, subject, html) {
+  async sendEmail(to, subject, html, attachments = []) {
     await this._transporter.sendMail({
       from: this._from,
       to,
       subject,
       html,
+      attachments,
     });
   }
 }
