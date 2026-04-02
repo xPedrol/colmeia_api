@@ -1,70 +1,98 @@
 import * as cheerio from "cheerio";
 
-const BASE = "https://revistacultivar.com.br";
-const URL = `${BASE}/noticias?categoria=apicultura`;
-
-function clean(text = "") {
-  return text.replace(/\s+/g, " ").trim();
-}
-
-function absoluteUrl(url) {
-  if (!url) return null;
-  return url.startsWith("http") ? url : new URL(url, BASE).toString();
-}
-
-async function scrapeApicultura() {
-  const res = await fetch(URL, {
-    headers: {
-      "User-Agent": "Mozilla/5.0",
-      "Accept-Language": "pt-BR,pt;q=0.9",
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} ao acessar ${URL}`);
+export class NewsScrapper {
+  constructor(...urls) {
+    this.urls = urls;
   }
 
-  const html = await res.text();
-  const $ = cheerio.load(html);
+  clean(text = "") {
+    return text.replace(/\s+/g, " ").trim();
+  }
 
-  const cards = [];
+  absoluteUrl(url) {
+    if (!url) return null;
+    const origin = new URL(url).origin;
+    return url.startsWith("http") ? url : new URL(url, origin).toString();
+  }
 
-  $("article").each((_, article) => {
-    const $article = $(article);
+  findImportantArticleLink($, $article, acceptedSubstrings = ["/noticias/"]) {
+    const hrefs = $article
+      .find("a")
+      .toArray()
+      .map((anchor) => $(anchor).attr("href"))
+      .filter(Boolean);
 
-    let title = clean($article.find("h3").first().text());
-    if (!title) title = clean($article.find("h2").first().text());
-    const articleLink = absoluteUrl(
-      $article
-        .find("a")
-        .toArray()
-        .map((anchor) => $(anchor).attr("href"))
-        .find((href) => href?.includes("/noticias/")),
+    if (hrefs.length === 0) return null;
+
+    const preferredHref = hrefs.find((href) =>
+      acceptedSubstrings.some((substring) => href.includes(substring)),
     );
-    const description = clean($article.find("p").first().text());
-    const image = absoluteUrl($article.find("picture img").first().attr("src"));
 
-    if (!title) return;
+    return preferredHref || hrefs[0];
+  }
 
-    cards.push({
-      titulo: title,
-      descricao: description || null,
-      imagem: image || null,
-      numeration: cards.length + 1,
-      link: articleLink || null,
+  async scrapeApicultura(url) {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept-Language": "pt-BR,pt;q=0.9",
+      },
     });
-  });
 
-  return cards;
-}
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} ao acessar ${url}`);
+    }
 
-export async function getNews() {
-  try {
-    const res = await scrapeApicultura();
-    console.log(JSON.stringify(res, null, 2));
-    return res;
-  } catch (err) {
-    console.error(err);
-    return [];
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const cards = [];
+
+    $("article").each((_, article) => {
+      const $article = $(article);
+
+      let title = this.clean($article.find("h3").first().text());
+      if (!title) title = this.clean($article.find("h2").first().text());
+
+      const articleLink = this.absoluteUrl(
+        this.findImportantArticleLink($, $article, ["/noticias/"]),
+      );
+      const description = this.clean($article.find("p").first().text());
+      const image = this.absoluteUrl(
+        $article.find("picture img").first().attr("src") ||
+          $article.find("img").first().attr("src"),
+      );
+
+      if (!title) return;
+
+      cards.push({
+        titulo: title,
+        descricao: description || null,
+        imagem: image || null,
+        numeration: cards.length + 1,
+        link: articleLink || null,
+      });
+    });
+    const seenLinks = new Set();
+    const uniqueCards = cards.filter((card) => {
+      if (seenLinks.has(card.link)) return false;
+      seenLinks.add(card.link);
+      return true;
+    });
+
+    return uniqueCards;
+  }
+
+  async getNews() {
+    try {
+      const allNews = [];
+      for (const url of this.urls) {
+        const news = await this.scrapeApicultura(url);
+        allNews.push(...news);
+      }
+      return allNews;
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
   }
 }

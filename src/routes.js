@@ -7,7 +7,7 @@ import VisitRepository from "./repositories/visit.js";
 import { comparePassword, hashPassword } from "./utils/bcrypt.js";
 import DashboardRepository from "./repositories/dashboard.js";
 import MailService from "./services/mail.js";
-import { getNews } from "./services/newsScrapper.js";
+import { NewsScrapper } from "./services/newsScrapper.js";
 import {
   compareResetCode,
   generateResetCode,
@@ -33,6 +33,10 @@ export default async function routes(fastify) {
   const expenseRepo = new ExpenseRepository(fastify.pg);
   const saleRepo = new SaleRepository(fastify.pg);
   const dashboardRepo = new DashboardRepository(fastify.pg);
+  const newsScrapper = new NewsScrapper(
+    "https://revistacultivar.com.br/noticias?categoria=apicultura",
+    "https://ecoa.org.br/tag/apicultura/",
+  );
 
   fastify.get("/", async (request, reply) => {
     return { message: "Colmeia API is running!" };
@@ -383,7 +387,7 @@ export default async function routes(fastify) {
   // ─── NEWS ──────────────────────────────────────────────────────────────────
 
   fastify.get("/news", async (request, reply) => {
-    const news = await getNews();
+    const news = await newsScrapper.getNews();
     return reply.send(news);
   });
 }
