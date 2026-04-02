@@ -7,6 +7,7 @@ import VisitRepository from "./repositories/visit.js";
 import { comparePassword, hashPassword } from "./utils/bcrypt.js";
 import DashboardRepository from "./repositories/dashboard.js";
 import MailService from "./services/mail.js";
+import { getNews } from "./services/newsScrapper.js";
 import {
   compareResetCode,
   generateResetCode,
@@ -118,11 +119,9 @@ export default async function routes(fastify) {
     }
 
     if (resetCodeAttempts >= MAX_RESET_CODE_ATTEMPTS) {
-      return reply
-        .code(429)
-        .send({
-          error: "Limite de tentativas excedido. Solicite um novo código.",
-        });
+      return reply.code(429).send({
+        error: "Limite de tentativas excedido. Solicite um novo código.",
+      });
     }
 
     if (isResetCodeExpired(resetCodeExpiresAt)) {
@@ -379,5 +378,12 @@ export default async function routes(fastify) {
     if (!deleted)
       return reply.code(404).send({ error: "Venda não encontrada" });
     return reply.code(204).send();
+  });
+
+  // ─── NEWS ──────────────────────────────────────────────────────────────────
+
+  fastify.get("/news", async (request, reply) => {
+    const news = await getNews();
+    return reply.send(news);
   });
 }
