@@ -19,7 +19,6 @@ import {
 
 export default async function routes(fastify) {
   const getYearFromBody = (request) => {
-    console.log("Request body:", request?.body?.year || request?.query?.year);
     const parsedYear = Number.parseInt(
       request?.body?.year || request?.query?.year,
       10,
