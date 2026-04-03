@@ -254,6 +254,18 @@ export default async function routes(fastify) {
     return apiary;
   });
 
+  fastify.put("/apiaries/:id/strengths", async (request, reply) => {
+    const { apiaryStrength, floweringStrength } = request.body;
+    const apiary = await apiaryRepo.updateStrengths(
+      request.params.id,
+      request.user.id,
+      { apiaryStrength, floweringStrength },
+    );
+    if (!apiary)
+      return reply.code(404).send({ error: "Apiário não encontrado" });
+    return apiary;
+  });
+
   fastify.delete("/apiaries/:id", async (request, reply) => {
     const deleted = await apiaryRepo.delete(request.params.id, request.user.id);
     if (!deleted)

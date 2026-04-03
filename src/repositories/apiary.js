@@ -153,6 +153,17 @@ export default class ApiaryRepository {
     return rows[0] ?? null;
   }
 
+  async updateStrengths(id, userId, { apiaryStrength, floweringStrength }) {
+    const { rows } = await this._db.query(
+      `UPDATE apiaries
+       SET "apiaryStrength" = $1,
+           "floweringStrength" = $2
+       WHERE id = $3 AND user_id = $4 RETURNING *`,
+      [apiaryStrength, floweringStrength, id, userId],
+    );
+    return rows[0] ?? null;
+  }
+
   async delete(id, userId) {
     const { rowCount } = await this._db.query(
       "DELETE FROM apiaries WHERE id = $1 AND user_id = $2",
