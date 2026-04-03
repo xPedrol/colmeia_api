@@ -8,6 +8,7 @@ CREATE TABLE public.apiaries (
   location text,
   swarm smallint NOT NULL,
   honey_super smallint NOT NULL,
+  "beeType" jsonb,
   image_link text,
   user_id uuid DEFAULT gen_random_uuid(),
   CONSTRAINT apiaries_pkey PRIMARY KEY (id),
