@@ -218,7 +218,15 @@ export default async function routes(fastify) {
   });
 
   fastify.post("/apiaries", async (request, reply) => {
-    const { name, location, swarm, honey_super, image_link } = request.body;
+    const {
+      name,
+      location,
+      swarm,
+      honey_super,
+      image_link,
+      apiaryStrength,
+      floweringStrength,
+    } = request.body;
 
     const apiary = await apiaryRepo.create({
       name,
@@ -226,6 +234,8 @@ export default async function routes(fastify) {
       swarm,
       honey_super,
       image_link,
+      apiaryStrength,
+      floweringStrength,
       user_id: request.user.id,
     });
     return reply.code(201).send(apiary);

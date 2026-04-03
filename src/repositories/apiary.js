@@ -73,21 +73,76 @@ export default class ApiaryRepository {
     return { ...apiary, visits };
   }
 
-  async create({ name, location, swarm, honey_super, image_link, user_id }) {
+  async create({
+    name,
+    location,
+    swarm,
+    honey_super,
+    image_link,
+    apiaryStrength,
+    floweringStrength,
+    user_id,
+  }) {
     const { rows } = await this._db.query(
-      `INSERT INTO apiaries (name, location, swarm, honey_super, image_link, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [name, location, swarm, honey_super, image_link, user_id],
+      `INSERT INTO apiaries (
+         name,
+         location,
+         swarm,
+         honey_super,
+         image_link,
+         "apiaryStrength",
+         "floweringStrength",
+         user_id
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [
+        name,
+        location,
+        swarm,
+        honey_super,
+        image_link,
+        apiaryStrength,
+        floweringStrength,
+        user_id,
+      ],
     );
     return rows[0];
   }
 
-  async update(id, userId, { name, location, swarm, honey_super, image_link }) {
+  async update(
+    id,
+    userId,
+    {
+      name,
+      location,
+      swarm,
+      honey_super,
+      image_link,
+      apiaryStrength,
+      floweringStrength,
+    },
+  ) {
     const { rows } = await this._db.query(
       `UPDATE apiaries
-       SET name = $1, location = $2, swarm = $3, honey_super = $4, image_link = $5
-       WHERE id = $6 AND user_id = $7 RETURNING *`,
-      [name, location, swarm, honey_super, image_link, id, userId],
+       SET name = $1,
+           location = $2,
+           swarm = $3,
+           honey_super = $4,
+           image_link = $5,
+           "apiaryStrength" = $6,
+           "floweringStrength" = $7
+       WHERE id = $8 AND user_id = $9 RETURNING *`,
+      [
+        name,
+        location,
+        swarm,
+        honey_super,
+        image_link,
+        apiaryStrength,
+        floweringStrength,
+        id,
+        userId,
+      ],
     );
     return rows[0] ?? null;
   }
