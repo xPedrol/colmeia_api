@@ -4,6 +4,7 @@ import ExpenseRepository from "./repositories/expense.js";
 import SaleRepository from "./repositories/sale.js";
 import UserRepository from "./repositories/user.js";
 import VisitRepository from "./repositories/visit.js";
+import ColmeiaRepository from "./repositories/colmeia.js";
 import { comparePassword, hashPassword } from "./utils/bcrypt.js";
 import DashboardRepository from "./repositories/dashboard.js";
 import MailService from "./services/mail.js";
@@ -39,6 +40,7 @@ export default async function routes(fastify) {
 
   const userRepo = new UserRepository(fastify.pg, mailService);
   const apiaryRepo = new ApiaryRepository(fastify.pg);
+  const colmeiaRepo = new ColmeiaRepository(fastify.pg);
   const visitRepo = new VisitRepository(fastify.pg);
   const expenseCategoryRepo = new ExpenseCategoryRepository(fastify.pg);
   const expenseRepo = new ExpenseRepository(fastify.pg);
@@ -222,6 +224,7 @@ export default async function routes(fastify) {
       location,
       swarm,
       honey_super,
+      predominant_bloom,
       beeType,
       image_link,
       apiaryStrength,
@@ -233,6 +236,7 @@ export default async function routes(fastify) {
       location,
       swarm,
       honey_super,
+      predominant_bloom,
       beeType,
       image_link,
       apiaryStrength,
@@ -243,11 +247,29 @@ export default async function routes(fastify) {
   });
 
   fastify.put("/apiaries/:id", async (request, reply) => {
-    const apiary = await apiaryRepo.update(
-      request.params.id,
-      request.user.id,
-      request.body,
-    );
+    const {
+      name,
+      location,
+      swarm,
+      honey_super,
+      predominant_bloom,
+      beeType,
+      image_link,
+      apiaryStrength,
+      floweringStrength,
+    } = request.body;
+
+    const apiary = await apiaryRepo.update(request.params.id, request.user.id, {
+      name,
+      location,
+      swarm,
+      honey_super,
+      predominant_bloom,
+      beeType,
+      image_link,
+      apiaryStrength,
+      floweringStrength,
+    });
     if (!apiary)
       return reply.code(404).send({ error: "Apiário não encontrado" });
     return apiary;
@@ -269,6 +291,86 @@ export default async function routes(fastify) {
     const deleted = await apiaryRepo.delete(request.params.id, request.user.id);
     if (!deleted)
       return reply.code(404).send({ error: "Apiário não encontrado" });
+    return reply.code(204).send();
+  });
+
+  // ─── COLMEIAS ───────────────────────────────────────────────────────────────
+
+  fastify.get("/colmeias", async (request, reply) => {
+    const { apiary_id } = request.query;
+    if (apiary_id) return colmeiaRepo.getByApiary(apiary_id, request.user.id);
+    return colmeiaRepo.getAll(request.user.id);
+  });
+
+  fastify.get("/colmeias/:id", async (request, reply) => {
+    const colmeia = await colmeiaRepo.getById(
+      request.params.id,
+      request.user.id,
+    );
+    if (!colmeia)
+      return reply.code(404).send({ error: "Colmeia não encontrada" });
+    return colmeia;
+  });
+
+  fastify.post("/colmeias", async (request, reply) => {
+    const {
+      name,
+      type,
+      apiary_id,
+      acquisition_date,
+      location,
+      strength,
+      description,
+    } = request.body;
+
+    const colmeia = await colmeiaRepo.create({
+      name,
+      type,
+      apiary_id,
+      acquisition_date,
+      location,
+      strength,
+      description,
+      user_id: request.user.id,
+    });
+    return reply.code(201).send(colmeia);
+  });
+
+  fastify.put("/colmeias/:id", async (request, reply) => {
+    const {
+      name,
+      type,
+      apiary_id,
+      acquisition_date,
+      location,
+      strength,
+      description,
+    } = request.body;
+    const colmeia = await colmeiaRepo.update(
+      request.params.id,
+      request.user.id,
+      {
+        name,
+        type,
+        apiary_id,
+        acquisition_date,
+        location,
+        strength,
+        description,
+      },
+    );
+    if (!colmeia)
+      return reply.code(404).send({ error: "Colmeia não encontrada" });
+    return colmeia;
+  });
+
+  fastify.delete("/colmeias/:id", async (request, reply) => {
+    const deleted = await colmeiaRepo.delete(
+      request.params.id,
+      request.user.id,
+    );
+    if (!deleted)
+      return reply.code(404).send({ error: "Colmeia não encontrada" });
     return reply.code(204).send();
   });
 

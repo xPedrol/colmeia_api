@@ -8,11 +8,27 @@ CREATE TABLE public.apiaries (
   location text,
   swarm smallint NOT NULL,
   honey_super smallint NOT NULL,
+  predominant_bloom character varying,
   "beeType" jsonb,
   image_link text,
   user_id uuid DEFAULT gen_random_uuid(),
   CONSTRAINT apiaries_pkey PRIMARY KEY (id),
   CONSTRAINT apiaries_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.colmeias (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  name character varying NOT NULL,
+  type character varying NOT NULL DEFAULT 'isca',
+  apiary_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  acquisition_date timestamp with time zone NOT NULL DEFAULT now(),
+  location text,
+  strength smallint NOT NULL DEFAULT 0,
+  description text,
+  user_id uuid DEFAULT gen_random_uuid(),
+  CONSTRAINT colmeias_pkey PRIMARY KEY (id),
+  CONSTRAINT colmeias_apiary_id_fkey FOREIGN KEY (apiary_id) REFERENCES public.apiaries(id),
+  CONSTRAINT colmeias_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.expense_categories (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
