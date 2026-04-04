@@ -44,7 +44,7 @@ export default class ColmeiaRepository {
 
   async create({
     name,
-    type = "isca",
+    colmeia_type = "isca",
     apiary_id,
     acquisition_date,
     location,
@@ -55,7 +55,7 @@ export default class ColmeiaRepository {
     const { rows } = await this._db.query(
       `INSERT INTO colmeias (
          name,
-         type,
+         colmeia_type,
          apiary_id,
          acquisition_date,
          location,
@@ -67,7 +67,7 @@ export default class ColmeiaRepository {
        RETURNING *`,
       [
         name,
-        type,
+        colmeia_type,
         apiary_id,
         acquisition_date,
         location,
@@ -84,7 +84,7 @@ export default class ColmeiaRepository {
     userId,
     {
       name,
-      type = "isca",
+      colmeia_type = "isca",
       apiary_id,
       acquisition_date,
       location,
@@ -95,7 +95,7 @@ export default class ColmeiaRepository {
     const { rows } = await this._db.query(
       `UPDATE colmeias
        SET name = $1,
-           type = $2,
+           colmeia_type = $2,
            apiary_id = $3,
            acquisition_date = $4,
            location = $5,
@@ -108,7 +108,7 @@ export default class ColmeiaRepository {
        RETURNING colmeias.*`,
       [
         name,
-        type,
+        colmeia_type,
         apiary_id,
         acquisition_date,
         location,

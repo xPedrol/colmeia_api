@@ -314,18 +314,20 @@ export default async function routes(fastify) {
 
   fastify.post("/colmeias", async (request, reply) => {
     const {
-      name,
+      colmeia_type,
       type,
+      name,
       apiary_id,
       acquisition_date,
       location,
       strength,
       description,
     } = request.body;
+    const finalColmeiaType = colmeia_type ?? type;
 
     const colmeia = await colmeiaRepo.create({
       name,
-      type,
+      colmeia_type: finalColmeiaType,
       apiary_id,
       acquisition_date,
       location,
@@ -338,20 +340,22 @@ export default async function routes(fastify) {
 
   fastify.put("/colmeias/:id", async (request, reply) => {
     const {
-      name,
+      colmeia_type,
       type,
+      name,
       apiary_id,
       acquisition_date,
       location,
       strength,
       description,
     } = request.body;
+    const finalColmeiaType = colmeia_type ?? type;
     const colmeia = await colmeiaRepo.update(
       request.params.id,
       request.user.id,
       {
         name,
-        type,
+        colmeia_type: finalColmeiaType,
         apiary_id,
         acquisition_date,
         location,
