@@ -57,6 +57,14 @@ export default async function routes(fastify) {
   });
 
   // ─── DASHBOARD ────────────────────────────────────────────────────────────
+  fastify.get("/dashboard/apiary-yearly-stats", async (request, reply) => {
+    const year = getYearFromBody(request);
+    const stats = await dashboardRepo.getApiaryYearlyStats(
+      request.user.id,
+      year,
+    );
+    return reply.code(200).send(stats);
+  });
 
   fastify.get("/dashboard/summary", async (request, reply) => {
     const year = getYearFromBody(request);

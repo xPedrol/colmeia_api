@@ -117,4 +117,26 @@ export default class DashboardRepository {
     }
     return rows[0];
   }
+  /**
+   * Retorna, para cada apiário do usuário, por ano, o número de melgueiras retiradas e o número de visitas
+   */
+  async getApiaryYearlyStats(userId, year = new Date().getFullYear()) {
+    const { rows } = await this._db.query(
+      `SELECT
+        a.id AS apiary_id,
+        a.name AS apiary_name,
+        COUNT(v.id) AS total_visits,
+        COALESCE(SUM(v.removed_honey_super), 0) AS total_removed_honey_supers
+      FROM apiaries a
+      LEFT JOIN visits v ON v.apiary_id = a.id
+        AND v.user_id = a.user_id
+        AND EXTRACT(YEAR FROM v.date) = $2
+      WHERE a.user_id = $1
+      GROUP BY a.id, a.name
+      ORDER BY a.name ASC
+      `,
+      [userId, year],
+    );
+    return rows;
+  }
 }
