@@ -80,6 +80,26 @@ export default class DashboardRepository {
     return rows;
   }
 
+  async getExpensesByCategory(userId, year = new Date().getFullYear()) {
+    const { rows } = await this._db.query(
+      `SELECT
+              ec.id AS category_id,
+              ec.name AS category_name,
+              COALESCE(SUM(e.value), 0) AS total_value
+        FROM expense_categories ec
+        LEFT JOIN expenses e
+          ON e.category_id = ec.id
+          AND e.user_id = $1::uuid
+          AND EXTRACT(YEAR FROM e.date) = $2
+        WHERE ec.user_id = $1::uuid
+        GROUP BY ec.id, ec.name
+        ORDER BY total_value DESC, ec.name ASC
+      `,
+      [userId, year],
+    );
+    return rows;
+  }
+
   async getMonthlyVisits(userId, year = new Date().getFullYear()) {
     const { rows } = await this._db.query(
       `SELECT

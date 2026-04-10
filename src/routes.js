@@ -81,6 +81,15 @@ export default async function routes(fastify) {
     return reply.code(201).send(summary);
   });
 
+  fastify.get("/dashboard/expenses-by-category", async (request, reply) => {
+    const year = getYearFromBody(request);
+    const summary = await dashboardRepo.getExpensesByCategory(
+      request.user.id,
+      year,
+    );
+    return reply.code(200).send(summary);
+  });
+
   fastify.get("/dashboard/monthly-visits", async (request, reply) => {
     const year = getYearFromBody(request);
     const summary = await dashboardRepo.getMonthlyVisits(request.user.id, year);
