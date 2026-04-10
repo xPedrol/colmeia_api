@@ -128,7 +128,7 @@ export default class DashboardRepository {
         COUNT(v.id) AS total_visits,
         COALESCE(SUM(v.removed_honey_super), 0) AS total_removed_honey_supers
       FROM apiaries a
-      LEFT JOIN visits v ON v.apiary_id = a.id
+      INNER JOIN visits v ON v.apiary_id = a.id
         AND v.user_id = a.user_id
         AND EXTRACT(YEAR FROM v.date) = $2
       WHERE a.user_id = $1
