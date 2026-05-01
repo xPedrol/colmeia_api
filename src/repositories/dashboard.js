@@ -146,6 +146,7 @@ export default class DashboardRepository {
         a.id AS apiary_id,
         a.name AS apiary_name,
         COUNT(v.id) AS total_visits,
+        COALESCE(SUM(v.new_honey_super), 0) AS total_new_honey_supers,
         COALESCE(SUM(v.removed_honey_super), 0) AS total_removed_honey_supers
       FROM apiaries a
       INNER JOIN visits v ON v.apiary_id = a.id
