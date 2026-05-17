@@ -45,6 +45,14 @@ export default class UserRepository {
     return rows[0];
   }
 
+  async createUserFromGoogle(name, email) {
+    const { rows } = await this._db.query(
+      "INSERT INTO users (name, email, google_auth) VALUES ($1, $2, TRUE) RETURNING *",
+      [name, email],
+    );
+    return rows[0];
+  }
+
   async updateUser(id, name, email, password) {
     const { rows } = await this._db.query(
       "UPDATE users SET name = $1, email = $2, password = $3 WHERE id = $4 RETURNING *",

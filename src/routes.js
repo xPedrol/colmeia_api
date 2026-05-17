@@ -17,6 +17,7 @@ import {
   isResetCodeExpired,
   MAX_RESET_CODE_ATTEMPTS,
 } from "./utils/passwordResetCode.js";
+import { OAuth2Client } from "google-auth-library";
 
 export default async function routes(fastify) {
   const getYearFromBody = (request) => {
@@ -130,6 +131,38 @@ export default async function routes(fastify) {
       token,
       user: { id: user.id, name: user.name, email: user.email },
     });
+  });
+
+  fastify.post("/auth/google", async (request, reply) => {
+    const { idToken } = request.body;
+    if (!idToken) return reply.code(400).send({ error: "ID token obrigatório" });
+
+    try {
+      const client = new OAuth2Client();
+      const ticket = await client.verifyIdToken({
+        idToken,
+        audience: fastify.config.GOOGLE_CLIENT_ID || undefined,
+      });
+      const payload = ticket.getPayload();
+      if (!payload?.email) return reply.code(401).send({ error: "Token inválido" });
+
+      const { email, name } = payload;
+      let user = await userRepo.getUserByEmail(email);
+      if (!user) {
+        user = await userRepo.createUserFromGoogle(name || email, email);
+      } else if (!user.google_auth) {
+        return reply.code(409).send({ error: "Conta criada com e-mail e senha. Use seu login normal." });
+      }
+
+      const token = fastify.jwt.sign({ id: user.id, email: user.email });
+      return reply.send({
+        token,
+        user: { id: user.id, name: user.name, email: user.email },
+      });
+    } catch (err) {
+      fastify.log.error(err);
+      return reply.code(401).send({ error: "Token inválido" });
+    }
   });
 
   fastify.post("/auth/request-password-reset", async (request, reply) => {

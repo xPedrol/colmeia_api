@@ -19,6 +19,7 @@ export const config = {
       SMTP_USER: { type: "string" },
       SMTP_PASS: { type: "string" },
       SMTP_FROM: { type: "string" },
+      GOOGLE_CLIENT_ID: { type: "string", default: "" },
     },
   },
   dotenv: true,
