@@ -1,14 +1,42 @@
 import PDFDocument from "pdfkit";
 import fetch from "node-fetch";
 
+const YELLOW = "#F2C94C";
+const DARK = "#1C1C17";
+const BROWN = "#7C5800";
+const GREEN = "#0a7a3f";
+const RED = "#a12a2a";
+const GRAY = "#888888";
+
+const LEFT = 48;
+const PAGE_W = 595.28;
+const PAGE_H = 841.89;
+const CONTENT_W = PAGE_W - LEFT * 2;
+const FOOTER_Y = PAGE_H - 42;
+const LABEL_COL = 290;
+const VALUE_COL = CONTENT_W - LABEL_COL;
+const ROW_H = 18;
+const CHART_W = 460;
+const CHART_H = 230;
+
 async function fetchImageBuffer(url) {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
     return Buffer.from(await res.arrayBuffer());
-  } catch (err) {
+  } catch {
     return null;
   }
+}
+
+const currency = (v) =>
+  Number(v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const integer = (v) => Number(v ?? 0).toLocaleString("pt-BR");
+
+function chartUrl(config) {
+  return `https://quickchart.io/chart?c=${encodeURIComponent(
+    JSON.stringify(config),
+  )}&format=png&width=500&height=250`;
 }
 
 export async function generateUserSummaryPdf({
@@ -25,7 +53,6 @@ export async function generateUserSummaryPdf({
   const buffers = [];
   doc.on("data", (b) => buffers.push(b));
 
-  // Fetch aggregated data
   const [user, summary, expensesByCategory, monthlyVisits, salesSummary] =
     await Promise.all([
       userRepo.getUserById(userId),
@@ -35,219 +62,162 @@ export async function generateUserSummaryPdf({
       dashboardRepo.getSalesSummary(userId, year),
     ]);
 
-  // Document metadata
   doc.info.Title = `Resumo do Usuário — ${user?.name ?? "Usuário"}`;
   doc.info.Author = "ColmeiaOS";
 
-  // Helper formatters
-  const currency = (v) =>
-    Number(v ?? 0).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  const integer = (v) => Number(v ?? 0).toLocaleString("pt-BR");
-
-  const totalExpenses = Number(salesSummary?.total_expenses ?? 0) || 0;
-  const totalAmountSales = Number(salesSummary?.total_amount_sales ?? 0) || 0;
-  const totalValueSales = Number(salesSummary?.total_value_sales ?? 0) || 0;
+  const totalExpenses = Number(salesSummary?.total_expenses ?? 0);
+  const totalAmountSales = Number(salesSummary?.total_amount_sales ?? 0);
+  const totalValueSales = Number(salesSummary?.total_value_sales ?? 0);
   const netProfit = totalValueSales - totalExpenses;
 
-  // Banner / Title
-  doc.save();
-  doc.rect(0, 0, doc.page.width, 80).fill("#F2C94C");
-  doc.fillColor("#ffffff").fontSize(22).text("Resumo do Usuário", 0, 26, {
-    align: "center",
-  });
-  doc.restore();
-
-  doc.moveDown(3);
-  doc
-    .fillColor("#1C1C17")
-    .fontSize(12)
-    .text(`${user?.name ?? "Usuário"} — ${user?.email ?? ""}`);
-  doc.text(`Ano: ${year}`);
-  doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`);
-  doc.moveDown();
-
-  // Small helper to draw a two-column row (label / value)
-  const leftMargin = 48;
-  const labelWidth = 300;
-  const valueWidth = doc.page.width - leftMargin - leftMargin - labelWidth;
-  function drawRow(label, value) {
+  // Two-column row — explicit y prevents cursor drift when text wraps
+  function drawRow(label, value, color = DARK) {
     const y = doc.y;
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(10)
-      .text(label, leftMargin, y, { width: labelWidth });
-    doc
-      .font("Helvetica")
-      .fontSize(10)
-      .text(value, leftMargin + labelWidth, y, {
-        width: valueWidth,
-        align: "right",
-      });
-    doc.moveDown(0.6);
+    doc.font("Helvetica-Bold").fontSize(10).fillColor(color)
+      .text(label, LEFT, y, { width: LABEL_COL, lineBreak: false });
+    doc.font("Helvetica").fontSize(10).fillColor(color)
+      .text(value, LEFT + LABEL_COL, y, { width: VALUE_COL, align: "right", lineBreak: false });
+    doc.y = y + ROW_H;
   }
 
-  // Summary numbers
-  doc.fontSize(12).fillColor("#7C5800").text("Visão geral:");
-  doc.moveDown(0.2);
-  doc.fillColor("#1C1C17");
-  drawRow("Total de apiários:", integer(summary.total_apiaries ?? 0));
-  drawRow("Total de visitas (ano):", integer(summary.total_visits ?? 0));
-  drawRow("Novas melgueiras (ano):", integer(summary.total_new_swarm ?? 0));
-  drawRow(
-    "Melgueiras removidas (ano):",
-    integer(summary.total_removed_swarm ?? 0),
-  );
-  doc.moveDown();
+  function tableHeader(labelCol, valueCol) {
+    const y = doc.y;
+    doc.font("Helvetica-Bold").fontSize(10).fillColor(BROWN)
+      .text(labelCol, LEFT, y, { width: LABEL_COL, lineBreak: false });
+    doc.text(valueCol, LEFT + LABEL_COL, y, { width: VALUE_COL, align: "right", lineBreak: false });
+    doc.y = y + ROW_H;
+    doc.moveTo(LEFT, doc.y).lineTo(PAGE_W - LEFT, doc.y).strokeColor(BROWN).lineWidth(0.5).stroke();
+    doc.y += 6;
+    doc.font("Helvetica").fillColor(DARK);
+  }
 
-  // Financial summary
-  doc.fontSize(12).fillColor("#7C5800").text("Financeiro:");
-  doc.moveDown(0.2);
-  doc.fillColor("#1C1C17");
+  function sectionTitle(title) {
+    doc.moveDown(0.5);
+    doc.font("Helvetica-Bold").fontSize(12).fillColor(BROWN).text(title);
+    doc.moveDown(0.3);
+    doc.font("Helvetica").fillColor(DARK);
+  }
+
+  function ensureSpace(needed) {
+    if (doc.y + needed > FOOTER_Y) doc.addPage();
+  }
+
+  function embedChart(imgBuffer) {
+    if (!imgBuffer) return;
+    ensureSpace(CHART_H + 20);
+    doc.moveDown(0.5);
+    const x = LEFT + (CONTENT_W - CHART_W) / 2;
+    doc.image(imgBuffer, x, doc.y, { width: CHART_W, height: CHART_H });
+    doc.y += CHART_H + 10;
+  }
+
+  // ── Page 1: Summary ───────────────────────────────────────────────────
+  doc.save();
+  doc.rect(0, 0, PAGE_W, 80).fill(YELLOW);
+  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(22)
+    .text("Resumo do Usuário", 0, 28, { align: "center", width: PAGE_W });
+  doc.restore();
+
+  doc.y = 100;
+  doc.font("Helvetica").fontSize(11).fillColor(DARK)
+    .text(`${user?.name ?? "Usuário"} — ${user?.email ?? ""}`)
+    .text(`Ano: ${year}`)
+    .text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`);
+
+  sectionTitle("Visão geral");
+  drawRow("Total de apiários:", integer(summary?.total_apiaries ?? 0));
+  drawRow("Total de visitas (ano):", integer(summary?.total_visits ?? 0));
+  drawRow("Novas melgueiras (ano):", integer(summary?.total_new_swarm ?? 0));
+  drawRow("Melgueiras removidas (ano):", integer(summary?.total_removed_swarm ?? 0));
+
+  sectionTitle("Financeiro");
   drawRow("Total despesas (ano):", currency(totalExpenses));
   drawRow("Total vendas (quantidade):", integer(totalAmountSales));
   drawRow("Total vendas (valor):", currency(totalValueSales));
-  const profitLabel = netProfit >= 0 ? "Lucro líquido:" : "Prejuízo líquido:";
-  doc.fillColor(netProfit >= 0 ? "#0a7a3f" : "#a12a2a");
-  drawRow(profitLabel, currency(netProfit));
-  doc.fillColor("#1C1C17");
-  doc.moveDown();
+  drawRow(
+    netProfit >= 0 ? "Lucro líquido:" : "Prejuízo líquido:",
+    currency(netProfit),
+    netProfit >= 0 ? GREEN : RED,
+  );
 
-  // Charts: build QuickChart URLs
-  const quickChartBase = "https://quickchart.io/chart";
+  // Pre-fetch charts in parallel only when data exists
+  const topCategories = (expensesByCategory ?? []).slice(0, 10);
 
-  const expensesLabels = expensesByCategory.map((c) => c.category_name);
-  const expensesValues = expensesByCategory.map((c) => Number(c.total_value));
-  const expensesChartConfig = {
-    type: "pie",
-    data: { labels: expensesLabels, datasets: [{ data: expensesValues }] },
-  };
-  const expensesChartUrl = `${quickChartBase}?c=${encodeURIComponent(
-    JSON.stringify(expensesChartConfig),
-  )}&format=png&width=600&height=300`;
-
-  const monthlyLabels = monthlyVisits.map((m) => m.month);
-  const monthlyValues = monthlyVisits.map((m) => Number(m.total_visits));
-  const monthlyChartConfig = {
-    type: "bar",
-    data: {
-      labels: monthlyLabels,
-      datasets: [{ label: "Visitas", data: monthlyValues }],
-    },
-  };
-  const monthlyChartUrl = `${quickChartBase}?c=${encodeURIComponent(
-    JSON.stringify(monthlyChartConfig),
-  )}&format=png&width=600&height=300`;
-
-  // Try to embed charts and add detailed sections
   const [expensesImg, monthlyImg] = await Promise.all([
-    fetchImageBuffer(expensesChartUrl),
-    fetchImageBuffer(monthlyChartUrl),
+    topCategories.length > 0
+      ? fetchImageBuffer(
+          chartUrl({
+            type: "pie",
+            data: {
+              labels: topCategories.map((c) => c.category_name),
+              datasets: [{ data: topCategories.map((c) => Number(c.total_value)) }],
+            },
+          }),
+        )
+      : Promise.resolve(null),
+    (monthlyVisits?.length ?? 0) > 0
+      ? fetchImageBuffer(
+          chartUrl({
+            type: "bar",
+            data: {
+              labels: monthlyVisits.map((m) => m.month),
+              datasets: [{ label: "Visitas", data: monthlyVisits.map((m) => Number(m.total_visits)) }],
+            },
+          }),
+        )
+      : Promise.resolve(null),
   ]);
 
-  // Despesas por categoria — tabela (top 10)
-  const topCategories = (expensesByCategory || []).slice(0, 10);
-  const hasExpensesContent = topCategories.length > 0 || expensesImg;
-  if (hasExpensesContent) {
+  // ── Page 2: Expenses by category ──────────────────────────────────────
+  if (topCategories.length > 0 || expensesImg) {
     doc.addPage();
-    doc.fontSize(14).fillColor("#1C1C17").text("Despesas por categoria", {
-      align: "center",
-    });
+    doc.font("Helvetica-Bold").fontSize(14).fillColor(DARK)
+      .text("Despesas por categoria", { align: "center" });
     doc.moveDown();
 
-    if (topCategories.length === 0) {
-      doc.fontSize(10).text("Nenhuma despesa registrada.", { align: "left" });
-    } else {
-      // table header
-      doc
-        .font("Helvetica-Bold")
-        .fontSize(10)
-        .text("Categoria", leftMargin, doc.y, { width: labelWidth });
-      doc.text("Valor (R$)", leftMargin + labelWidth, doc.y, {
-        width: valueWidth,
-        align: "right",
-      });
-      doc.moveDown(0.6);
-      doc.font("Helvetica");
-      topCategories.forEach((c) => {
+    if (topCategories.length > 0) {
+      tableHeader("Categoria", "Valor (R$)");
+      for (const c of topCategories) {
+        ensureSpace(ROW_H);
         drawRow(c.category_name, currency(Number(c.total_value ?? 0)));
-      });
-    }
-
-    // Embed expenses chart if available
-    if (expensesImg) {
-      try {
-        doc.moveDown(0.5);
-        doc.image(expensesImg, { fit: [500, 300], align: "center" });
-      } catch (e) {
-        // ignore image errors
       }
     }
+
+    embedChart(expensesImg);
   }
 
-  // Visitas mensais
-  const hasMonthlyContent = (monthlyVisits && monthlyVisits.length > 0) || monthlyImg;
-  if (hasMonthlyContent) {
+  // ── Page 3: Monthly visits ────────────────────────────────────────────
+  if ((monthlyVisits?.length ?? 0) > 0 || monthlyImg) {
     doc.addPage();
-    doc
-      .fontSize(14)
-      .fillColor("#1C1C17")
+    doc.font("Helvetica-Bold").fontSize(14).fillColor(DARK)
       .text("Visitas mensais", { align: "center" });
     doc.moveDown();
-    if (!monthlyVisits || monthlyVisits.length === 0) {
-      doc.fontSize(10).text("Nenhuma visita registrada.", { align: "left" });
-    } else {
-      // simple two-column list
-      monthlyVisits.forEach((m) => {
-        drawRow(m.month, integer(m.total_visits ?? 0));
-      });
-    }
 
-    if (monthlyImg) {
-      try {
-        doc.moveDown(0.5);
-        doc.image(monthlyImg, { fit: [500, 300], align: "center" });
-      } catch (e) {
-        // ignore
+    if ((monthlyVisits?.length ?? 0) > 0) {
+      tableHeader("Mês", "Visitas");
+      for (const m of monthlyVisits) {
+        ensureSpace(ROW_H);
+        drawRow(m.month, integer(m.total_visits ?? 0));
       }
     }
+
+    embedChart(monthlyImg);
   }
 
-  // small footer with page numbers for the pages we generated
-  try {
-    const range = doc.bufferedPageRange();
-    // add 'Relatório gerado...' on the last page above the footer
-    const lastPageIndex = range.start + range.count - 1;
-    try {
-      doc.switchToPage(lastPageIndex);
-      doc.fontSize(10).fillColor("#666").text("Relatório gerado por ColmeiaOS", leftMargin, doc.page.height - 70, {
-        width: doc.page.width - leftMargin * 2,
+  // ── Page footers ──────────────────────────────────────────────────────
+  const range = doc.bufferedPageRange();
+  const total = range.count;
+  for (let i = range.start; i < range.start + total; i++) {
+    doc.switchToPage(i);
+    doc.font("Helvetica").fontSize(9).fillColor(GRAY)
+      .text(`ColmeiaOS • Página ${i + 1} de ${total}`, LEFT, FOOTER_Y, {
+        width: CONTENT_W,
         align: "center",
       });
-    } catch (e) {
-      // ignore
-    }
-
-    for (let i = range.start; i < range.start + range.count; i++) {
-      doc.switchToPage(i);
-      doc
-        .fontSize(10)
-        .fillColor("#888")
-        .text(`ColmeiaOS • Página ${i + 1}`, leftMargin, doc.page.height - 50, {
-          width: doc.page.width - leftMargin * 2,
-          align: "center",
-        });
-    }
-  } catch (e) {
-    // if buffering not available, skip page numbers
   }
 
   doc.end();
-
   await new Promise((res) => doc.on("end", res));
-
   return Buffer.concat(buffers);
 }
 
