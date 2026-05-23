@@ -154,11 +154,9 @@ export default async function routes(fastify) {
       if (!user) {
         user = await userRepo.createUserFromGoogle(name || email, email);
       } else if (!user.google_auth) {
-        return reply
-          .code(409)
-          .send({
-            error: "Conta criada com e-mail e senha. Use seu login normal.",
-          });
+        return reply.code(409).send({
+          error: "Conta criada com e-mail e senha. Use seu login normal.",
+        });
       }
 
       const token = fastify.jwt.sign({ id: user.id, email: user.email });
