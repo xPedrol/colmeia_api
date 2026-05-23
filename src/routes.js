@@ -9,6 +9,7 @@ import { comparePassword, hashPassword } from "./utils/bcrypt.js";
 import DashboardRepository from "./repositories/dashboard.js";
 import MailService from "./services/mail.js";
 import { NewsScrapper } from "./services/newsScrapper.js";
+import { generateUserSummaryPdf } from "./services/pdfService.js";
 import {
   compareResetCode,
   generateResetCode,
@@ -135,7 +136,8 @@ export default async function routes(fastify) {
 
   fastify.post("/auth/google", async (request, reply) => {
     const { idToken } = request.body;
-    if (!idToken) return reply.code(400).send({ error: "ID token obrigatório" });
+    if (!idToken)
+      return reply.code(400).send({ error: "ID token obrigatório" });
 
     try {
       const client = new OAuth2Client();
@@ -144,14 +146,19 @@ export default async function routes(fastify) {
         audience: fastify.config.GOOGLE_CLIENT_ID || undefined,
       });
       const payload = ticket.getPayload();
-      if (!payload?.email) return reply.code(401).send({ error: "Token inválido" });
+      if (!payload?.email)
+        return reply.code(401).send({ error: "Token inválido" });
 
       const { email, name } = payload;
       let user = await userRepo.getUserByEmail(email);
       if (!user) {
         user = await userRepo.createUserFromGoogle(name || email, email);
       } else if (!user.google_auth) {
-        return reply.code(409).send({ error: "Conta criada com e-mail e senha. Use seu login normal." });
+        return reply
+          .code(409)
+          .send({
+            error: "Conta criada com e-mail e senha. Use seu login normal.",
+          });
       }
 
       const token = fastify.jwt.sign({ id: user.id, email: user.email });
@@ -615,5 +622,24 @@ export default async function routes(fastify) {
   fastify.get("/news", async (request, reply) => {
     const news = await newsScrapper.getNews();
     return reply.send(news);
+  });
+
+  fastify.get("/export/user-summary", async (request, reply) => {
+    try {
+      const buffer = await generateUserSummaryPdf({
+        userRepo,
+        dashboardRepo,
+        apiaryRepo,
+        colmeiaRepo,
+        expenseRepo,
+        saleRepo,
+        userId: request.user.id,
+      });
+      const base64 = buffer.toString("base64");
+      return reply.send({ base64 });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: "Erro ao gerar PDF" });
+    }
   });
 }

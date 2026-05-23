@@ -18,7 +18,9 @@
     "fastify-plugin": "^5.1.0",
     "google-auth-library": "^10.6.2",
     "nodemailer": "^6.10.1",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "pdfkit": "^0.13.0",
+    "node-fetch": "^3.4.0"
   },
   "type": "module"
 }
