@@ -20,7 +20,7 @@
     "nodemailer": "^6.10.1",
     "pg": "^8.20.0",
     "pdfkit": "^0.13.0",
-    "node-fetch": "^3.4.0"
+    "node-fetch": "^3.3.2"
   },
   "type": "module"
 }
