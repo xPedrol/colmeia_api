@@ -56,15 +56,13 @@ export async function generateUserSummaryPdf({
   doc.fontSize(12).text("Financeiro:");
   doc.moveDown(0.2);
   doc.fontSize(10);
-  doc.text(`Total despesas (ano): R$ ${
-    (salesSummary.total_expenses ?? 0).toFixed(2)
-  }`);
-  doc.text(`Total vendas (quantidade): ${
-    (salesSummary.total_amount_sales ?? 0).toFixed(0)
-  }`);
-  doc.text(`Total vendas (valor): R$ ${
-    (salesSummary.total_value_sales ?? 0).toFixed(2)
-  }`);
+  const totalExpenses = Number(salesSummary?.total_expenses ?? 0) || 0;
+  const totalAmountSales = Number(salesSummary?.total_amount_sales ?? 0) || 0;
+  const totalValueSales = Number(salesSummary?.total_value_sales ?? 0) || 0;
+
+  doc.text(`Total despesas (ano): R$ ${totalExpenses.toFixed(2)}`);
+  doc.text(`Total vendas (quantidade): ${totalAmountSales.toFixed(0)}`);
+  doc.text(`Total vendas (valor): R$ ${totalValueSales.toFixed(2)}`);
   doc.moveDown();
 
   // Charts: build QuickChart URLs
