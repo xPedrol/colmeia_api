@@ -635,6 +635,17 @@ export default async function routes(fastify) {
         saleRepo,
         userId: request.user.id,
       });
+      // If client accepts PDF, return binary PDF; otherwise return base64 JSON
+      const accept = request.headers["accept"] || "";
+      if (accept.includes("application/pdf")) {
+        reply.header("Content-Type", "application/pdf");
+        reply.header(
+          "Content-Disposition",
+          'attachment; filename="colmeiaos-user-summary.pdf"',
+        );
+        return reply.send(buffer);
+      }
+
       const base64 = buffer.toString("base64");
       return reply.send({ base64 });
     } catch (err) {
@@ -642,4 +653,7 @@ export default async function routes(fastify) {
       return reply.code(500).send({ error: "Erro ao gerar PDF" });
     }
   });
+
+  // NOTE: /export/user-summary/download removed. Clients should call
+  // /export/user-summary with Authorization header to receive PDF/base64.
 }
