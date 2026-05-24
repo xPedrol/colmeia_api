@@ -305,11 +305,11 @@ export async function generateUserSummaryPdf({
     },
     {
       label: "TOTAL DE ENXAMES",
-      value: integer(totalSwarms),
+      value: totalSwarms,
     },
     {
       label: "TOTAL DE MELGUEIRAS",
-      value: integer(totalHoneySupers),
+      value: totalHoneySupers,
     },
     {
       label: "TOTAL DE VISITAS",
