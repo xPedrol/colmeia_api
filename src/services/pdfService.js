@@ -287,6 +287,17 @@ export async function generateUserSummaryPdf({
 
   // KPI overview
   sectionTitle("Visão Geral");
+  const totalSwarms = Number(
+    (summary?.initial_swarms ?? 0) +
+      (summary?.total_new_swarm ?? 0) -
+      (summary?.total_removed_swarm ?? 0),
+  );
+  const totalHoneySupers = Number(
+    (summary?.initial_honey_supers ?? 0) +
+      (summary?.total_new_honey_super ?? 0) -
+      (summary?.total_removed_honey_super ?? 0),
+  );
+
   kpiGrid([
     {
       label: "TOTAL DE APIÁRIOS",
@@ -294,11 +305,11 @@ export async function generateUserSummaryPdf({
     },
     {
       label: "TOTAL DE ENXAMES",
-      value: integer(summary?.initial_swarms ?? 0),
+      value: integer(totalSwarms),
     },
     {
       label: "TOTAL DE MELGUEIRAS",
-      value: integer(summary?.initial_honey_supers ?? 0),
+      value: integer(totalHoneySupers),
     },
     {
       label: "TOTAL DE VISITAS",
