@@ -46,9 +46,18 @@ const currency = (v) =>
 const integer = (v) => Number(v ?? 0).toLocaleString("pt-BR");
 
 const MONTHS_PT = {
-  Jan: "Jan", Feb: "Fev", Mar: "Mar", Apr: "Abr",
-  May: "Mai", Jun: "Jun", Jul: "Jul", Aug: "Ago",
-  Sep: "Set", Oct: "Out", Nov: "Nov", Dec: "Dez",
+  Jan: "Jan",
+  Feb: "Fev",
+  Mar: "Mar",
+  Apr: "Abr",
+  May: "Mai",
+  Jun: "Jun",
+  Jul: "Jul",
+  Aug: "Ago",
+  Sep: "Set",
+  Oct: "Out",
+  Nov: "Nov",
+  Dec: "Dez",
 };
 
 const LABEL_STYLE = {
@@ -280,20 +289,20 @@ export async function generateUserSummaryPdf({
   sectionTitle("Visão Geral");
   kpiGrid([
     {
-      label: "Total de apiários",
+      label: "TOTAL DE APIÁRIOS",
       value: integer(summary?.total_apiaries ?? 0),
     },
     {
-      label: "Total de visitas no ano",
+      label: "TOTAL DE ENXAMES",
+      value: integer(summary?.total_swarms ?? 0),
+    },
+    {
+      label: "TOTAL DE MELGUEIRAS",
+      value: integer(summary?.total_honey_supers ?? 0),
+    },
+    {
+      label: "TOTAL DE VISITAS",
       value: integer(summary?.total_visits ?? 0),
-    },
-    {
-      label: "Novas melgueiras no ano",
-      value: integer(summary?.total_new_swarm ?? 0),
-    },
-    {
-      label: "Melgueiras removidas no ano",
-      value: integer(summary?.total_removed_swarm ?? 0),
     },
   ]);
 
