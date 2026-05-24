@@ -294,11 +294,11 @@ export async function generateUserSummaryPdf({
     },
     {
       label: "TOTAL DE ENXAMES",
-      value: integer(summary?.total_swarms ?? 0),
+      value: integer(summary?.initial_swarms ?? 0),
     },
     {
       label: "TOTAL DE MELGUEIRAS",
-      value: integer(summary?.total_honey_supers ?? 0),
+      value: integer(summary?.initial_honey_supers ?? 0),
     },
     {
       label: "TOTAL DE VISITAS",
