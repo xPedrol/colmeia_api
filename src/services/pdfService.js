@@ -2,29 +2,29 @@ import PDFDocument from "pdfkit";
 import fetch from "node-fetch";
 
 const C = {
-  yellow:     "#F2C94C",
-  dark:       "#1C1C17",
-  brown:      "#7C5800",
+  yellow: "#F2C94C",
+  dark: "#1C1C17",
+  brown: "#7C5800",
   mutedBrown: "#9A6B10",
-  green:      "#0a7a3f",
-  greenBg:    "#E8F5EE",
-  red:        "#a12a2a",
-  redBg:      "#FAEAEA",
-  gray:       "#888888",
-  light:      "#F7F5F0",
-  border:     "#DDD5BB",
-  white:      "#FFFFFF",
+  green: "#0a7a3f",
+  greenBg: "#E8F5EE",
+  red: "#a12a2a",
+  redBg: "#FAEAEA",
+  gray: "#888888",
+  light: "#F7F5F0",
+  border: "#DDD5BB",
+  white: "#FFFFFF",
 };
 
 const MARGIN = 48;
-const PAGE_W  = 595.28;
-const PAGE_H  = 841.89;
-const CONTENT_W    = PAGE_W - MARGIN * 2;
-const FOOTER_Y     = PAGE_H - 38;
+const PAGE_W = 595.28;
+const PAGE_H = 841.89;
+const CONTENT_W = PAGE_W - MARGIN * 2;
+const FOOTER_Y = PAGE_H - 38;
 const CONTENT_BOTTOM = FOOTER_Y - 16;
 const LABEL_COL = 295;
 const VALUE_COL = CONTENT_W - LABEL_COL;
-const ROW_H   = 20;
+const ROW_H = 20;
 const CHART_W = CONTENT_W;
 const CHART_H = 220;
 
@@ -39,8 +39,24 @@ async function fetchImageBuffer(url) {
 }
 
 const currency = (v) =>
-  Number(v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  Number(v ?? 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 const integer = (v) => Number(v ?? 0).toLocaleString("pt-BR");
+
+const MONTHS_PT = {
+  Jan: "Jan", Feb: "Fev", Mar: "Mar", Apr: "Abr",
+  May: "Mai", Jun: "Jun", Jul: "Jul", Aug: "Ago",
+  Sep: "Set", Oct: "Out", Nov: "Nov", Dec: "Dez",
+};
+
+const LABEL_STYLE = {
+  color: "#fff",
+  backgroundColor: "rgba(0,0,0,0.6)",
+  borderRadius: 3,
+  padding: { top: 2, bottom: 2, left: 4, right: 4 },
+};
 
 function chartUrl(config) {
   return `https://quickchart.io/chart?c=${encodeURIComponent(
@@ -60,7 +76,7 @@ export async function generateUserSummaryPdf({
 }) {
   const doc = new PDFDocument({
     size: "A4",
-    margins: { top: MARGIN, bottom: 30, left: MARGIN, right: MARGIN },
+    margin: MARGIN,
     bufferPages: true,
   });
   const buffers = [];
@@ -78,15 +94,17 @@ export async function generateUserSummaryPdf({
   doc.info.Title = `Relatório Anual ${year} — ${user?.name ?? "Usuário"}`;
   doc.info.Author = "ColmeiaOS";
 
-  const totalExpenses    = Number(salesSummary?.total_expenses ?? 0);
+  const totalExpenses = Number(salesSummary?.total_expenses ?? 0);
   const totalAmountSales = Number(salesSummary?.total_amount_sales ?? 0);
-  const totalValueSales  = Number(salesSummary?.total_value_sales ?? 0);
-  const netProfit        = totalValueSales - totalExpenses;
+  const totalValueSales = Number(salesSummary?.total_value_sales ?? 0);
+  const netProfit = totalValueSales - totalExpenses;
 
   // ── Drawing helpers ───────────────────────────────────────────────────
 
   let rowIndex = 0;
-  function resetRows() { rowIndex = 0; }
+  function resetRows() {
+    rowIndex = 0;
+  }
 
   // Two-column row; zebra stripe on even rows; value is always bold
   function drawRow(label, value, opts = {}) {
@@ -95,10 +113,20 @@ export async function generateUserSummaryPdf({
     const stripe = bg ?? (rowIndex % 2 === 0 ? C.light : null);
     if (stripe) doc.rect(MARGIN - 4, y - 1, CONTENT_W + 8, ROW_H).fill(stripe);
     rowIndex++;
-    doc.font("Helvetica").fontSize(10).fillColor(C.dark)
+    doc
+      .font("Helvetica")
+      .fontSize(10)
+      .fillColor(C.dark)
       .text(label, MARGIN, y + 3, { width: LABEL_COL, lineBreak: false });
-    doc.font("Helvetica-Bold").fontSize(10).fillColor(color)
-      .text(value, MARGIN + LABEL_COL, y + 3, { width: VALUE_COL, align: "right", lineBreak: false });
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .fillColor(color)
+      .text(value, MARGIN + LABEL_COL, y + 3, {
+        width: VALUE_COL,
+        align: "right",
+        lineBreak: false,
+      });
     doc.y = y + ROW_H;
   }
 
@@ -106,9 +134,16 @@ export async function generateUserSummaryPdf({
   function tableHeader(left, right) {
     const y = doc.y;
     doc.rect(MARGIN - 4, y, CONTENT_W + 8, ROW_H + 4).fill(C.border);
-    doc.font("Helvetica-Bold").fontSize(10).fillColor(C.brown)
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .fillColor(C.brown)
       .text(left, MARGIN, y + 5, { width: LABEL_COL, lineBreak: false });
-    doc.text(right, MARGIN + LABEL_COL, y + 5, { width: VALUE_COL, align: "right", lineBreak: false });
+    doc.text(right, MARGIN + LABEL_COL, y + 5, {
+      width: VALUE_COL,
+      align: "right",
+      lineBreak: false,
+    });
     doc.y = y + ROW_H + 8;
     doc.font("Helvetica").fillColor(C.dark);
   }
@@ -118,22 +153,32 @@ export async function generateUserSummaryPdf({
     doc.moveDown(0.8);
     const y = doc.y;
     doc.rect(MARGIN, y, 3, 16).fill(C.yellow);
-    doc.font("Helvetica-Bold").fontSize(12).fillColor(C.dark)
-      .text(title, MARGIN + 10, y + 2, { width: CONTENT_W - 10, lineBreak: false });
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor(C.dark)
+      .text(title, MARGIN + 10, y + 2, {
+        width: CONTENT_W - 10,
+        lineBreak: false,
+      });
     doc.y = y + 24;
   }
 
   // Horizontal rule
   function divider(gap = 0.5) {
     doc.moveDown(gap);
-    doc.moveTo(MARGIN, doc.y).lineTo(PAGE_W - MARGIN, doc.y)
-      .strokeColor(C.border).lineWidth(0.5).stroke();
+    doc
+      .moveTo(MARGIN, doc.y)
+      .lineTo(PAGE_W - MARGIN, doc.y)
+      .strokeColor(C.border)
+      .lineWidth(0.5)
+      .stroke();
     doc.moveDown(gap);
   }
 
   // 2-column KPI grid with accent-bordered cards
   function kpiGrid(items) {
-    const gap  = 10;
+    const gap = 10;
     const cols = 2;
     const boxW = (CONTENT_W - gap * (cols - 1)) / cols;
     const boxH = 66;
@@ -144,10 +189,22 @@ export async function generateUserSummaryPdf({
       const y = startY + Math.floor(i / cols) * (boxH + gap);
       doc.rect(x, y, boxW, boxH).fill(C.light);
       doc.rect(x, y, 4, boxH).fill(C.yellow);
-      doc.fillColor(C.mutedBrown).font("Helvetica").fontSize(8)
-        .text(item.label.toUpperCase(), x + 12, y + 12, { width: boxW - 20, lineBreak: false });
-      doc.fillColor(C.dark).font("Helvetica-Bold").fontSize(20)
-        .text(item.value, x + 12, y + 30, { width: boxW - 20, lineBreak: false });
+      doc
+        .fillColor(C.mutedBrown)
+        .font("Helvetica")
+        .fontSize(8)
+        .text(item.label.toUpperCase(), x + 12, y + 12, {
+          width: boxW - 20,
+          lineBreak: false,
+        });
+      doc
+        .fillColor(C.dark)
+        .font("Helvetica-Bold")
+        .fontSize(20)
+        .text(item.value, x + 12, y + 30, {
+          width: boxW - 20,
+          lineBreak: false,
+        });
     });
 
     const rows = Math.ceil(items.length / cols);
@@ -173,7 +230,10 @@ export async function generateUserSummaryPdf({
     doc.save();
     doc.rect(0, 0, PAGE_W, 56).fill(C.dark);
     doc.rect(0, 0, 6, 56).fill(C.yellow);
-    doc.fillColor(C.yellow).font("Helvetica-Bold").fontSize(15)
+    doc
+      .fillColor(C.yellow)
+      .font("Helvetica-Bold")
+      .fontSize(15)
       .text(title, MARGIN, 19, { width: CONTENT_W });
     doc.restore();
     doc.y = 76;
@@ -185,19 +245,33 @@ export async function generateUserSummaryPdf({
   doc.save();
   doc.rect(0, 0, PAGE_W, 112).fill(C.dark);
   doc.rect(PAGE_W - 6, 0, 6, 112).fill(C.yellow);
-  doc.fillColor(C.yellow).font("Helvetica-Bold").fontSize(26)
+  doc
+    .fillColor(C.yellow)
+    .font("Helvetica-Bold")
+    .fontSize(26)
     .text("ColmeiaOS", MARGIN, 24, { width: CONTENT_W - 10 });
-  doc.fillColor(C.white).font("Helvetica").fontSize(11)
+  doc
+    .fillColor(C.white)
+    .font("Helvetica")
+    .fontSize(11)
     .text(`Relatório Anual · ${year}`, MARGIN, 58, { width: CONTENT_W - 10 });
-  doc.fillColor(C.yellow).font("Helvetica-Bold").fontSize(13)
+  doc
+    .fillColor(C.yellow)
+    .font("Helvetica-Bold")
+    .fontSize(13)
     .text(user?.name ?? "Usuário", MARGIN, 80, { width: CONTENT_W - 10 });
   doc.restore();
 
   doc.y = 128;
-  doc.font("Helvetica").fontSize(9).fillColor(C.gray)
+  doc
+    .font("Helvetica")
+    .fontSize(9)
+    .fillColor(C.gray)
     .text(
       `${user?.email ?? ""}   ·   Gerado em ${new Date().toLocaleString("pt-BR")}`,
-      MARGIN, doc.y, { width: CONTENT_W },
+      MARGIN,
+      doc.y,
+      { width: CONTENT_W },
     );
 
   divider();
@@ -205,10 +279,22 @@ export async function generateUserSummaryPdf({
   // KPI overview
   sectionTitle("Visão Geral");
   kpiGrid([
-    { label: "Total de apiários",            value: integer(summary?.total_apiaries ?? 0) },
-    { label: "Total de visitas no ano",       value: integer(summary?.total_visits ?? 0) },
-    { label: "Novas melgueiras no ano",       value: integer(summary?.total_new_swarm ?? 0) },
-    { label: "Melgueiras removidas no ano",   value: integer(summary?.total_removed_swarm ?? 0) },
+    {
+      label: "Total de apiários",
+      value: integer(summary?.total_apiaries ?? 0),
+    },
+    {
+      label: "Total de visitas no ano",
+      value: integer(summary?.total_visits ?? 0),
+    },
+    {
+      label: "Novas melgueiras no ano",
+      value: integer(summary?.total_new_swarm ?? 0),
+    },
+    {
+      label: "Melgueiras removidas no ano",
+      value: integer(summary?.total_removed_swarm ?? 0),
+    },
   ]);
 
   divider();
@@ -216,37 +302,64 @@ export async function generateUserSummaryPdf({
   // Financial summary
   sectionTitle("Financeiro");
   resetRows();
-  drawRow("Total de despesas (ano)",       currency(totalExpenses));
-  drawRow("Total de vendas — quantidade",  integer(totalAmountSales));
-  drawRow("Total de vendas — valor",       currency(totalValueSales));
+  drawRow("Total de despesas (ano)", currency(totalExpenses));
+  drawRow("Total de vendas — quantidade", integer(totalAmountSales));
+  drawRow("Total de vendas — valor", currency(totalValueSales));
 
   // Net profit — coloured highlight row
   const profitColor = netProfit >= 0 ? C.green : C.red;
-  const profitBg    = netProfit >= 0 ? C.greenBg : C.redBg;
-  const profitLabel = netProfit >= 0 ? "Lucro líquido (ano)" : "Prejuízo líquido (ano)";
-  drawRow(profitLabel, currency(netProfit), { color: profitColor, bg: profitBg });
+  const profitBg = netProfit >= 0 ? C.greenBg : C.redBg;
+  const profitLabel =
+    netProfit >= 0 ? "Lucro líquido (ano)" : "Prejuízo líquido (ano)";
+  drawRow(profitLabel, currency(netProfit), {
+    color: profitColor,
+    bg: profitBg,
+  });
 
   // ── Pre-fetch charts (parallel, only when data exists) ────────────────
   const topCategories = (expensesByCategory ?? []).slice(0, 10);
 
   const [expensesImg, monthlyImg] = await Promise.all([
     topCategories.length > 0
-      ? fetchImageBuffer(chartUrl({
-          type: "pie",
-          data: {
-            labels: topCategories.map((c) => c.category_name),
-            datasets: [{ data: topCategories.map((c) => Number(c.total_value)) }],
-          },
-        }))
+      ? fetchImageBuffer(
+          chartUrl({
+            type: "pie",
+            data: {
+              labels: topCategories.map((c) => c.category_name),
+              datasets: [
+                { data: topCategories.map((c) => Number(c.total_value)) },
+              ],
+            },
+            options: {
+              plugins: {
+                datalabels: LABEL_STYLE,
+                legend: { labels: { color: "#222" } },
+              },
+            },
+          }),
+        )
       : Promise.resolve(null),
     (monthlyVisits?.length ?? 0) > 0
-      ? fetchImageBuffer(chartUrl({
-          type: "bar",
-          data: {
-            labels: monthlyVisits.map((m) => m.month),
-            datasets: [{ label: "Visitas", data: monthlyVisits.map((m) => Number(m.total_visits)) }],
-          },
-        }))
+      ? fetchImageBuffer(
+          chartUrl({
+            type: "bar",
+            data: {
+              labels: monthlyVisits.map((m) => MONTHS_PT[m.month] ?? m.month),
+              datasets: [
+                {
+                  label: "Visitas",
+                  data: monthlyVisits.map((m) => Number(m.total_visits)),
+                },
+              ],
+            },
+            options: {
+              plugins: {
+                datalabels: { ...LABEL_STYLE, anchor: "end", align: "top" },
+                legend: { labels: { color: "#222" } },
+              },
+            },
+          }),
+        )
       : Promise.resolve(null),
   ]);
 
@@ -290,9 +403,16 @@ export async function generateUserSummaryPdf({
 
   for (let i = range.start; i < range.start + total; i++) {
     doc.switchToPage(i);
-    doc.moveTo(MARGIN, FOOTER_Y - 8).lineTo(PAGE_W - MARGIN, FOOTER_Y - 8)
-      .strokeColor(C.border).lineWidth(0.5).stroke();
-    doc.font("Helvetica").fontSize(8).fillColor(C.gray)
+    doc
+      .moveTo(MARGIN, FOOTER_Y - 8)
+      .lineTo(PAGE_W - MARGIN, FOOTER_Y - 8)
+      .strokeColor(C.border)
+      .lineWidth(0.5)
+      .stroke();
+    doc
+      .font("Helvetica")
+      .fontSize(8)
+      .fillColor(C.gray)
       .text(`ColmeiaOS · Relatório Anual ${year}`, MARGIN, FOOTER_Y, {
         width: CONTENT_W / 2,
         lineBreak: false,
