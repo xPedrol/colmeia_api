@@ -287,16 +287,14 @@ export async function generateUserSummaryPdf({
 
   // KPI overview
   sectionTitle("Visão Geral");
-  const totalSwarms = Number(
-    (summary?.initial_swarms ?? 0) +
-      (summary?.total_new_swarm ?? 0) -
-      (summary?.total_removed_swarm ?? 0),
-  );
-  const totalHoneySupers = Number(
-    (summary?.initial_honey_supers ?? 0) +
-      (summary?.total_new_honey_super ?? 0) -
-      (summary?.total_removed_honey_super ?? 0),
-  );
+  const totalSwarms =
+    Number(summary?.initial_swarms ?? 0) +
+    Number(summary?.total_new_swarm ?? 0) -
+    Number(summary?.total_removed_swarm ?? 0);
+  const totalHoneySupers =
+    Number(summary?.initial_honey_supers ?? 0) +
+    Number(summary?.total_new_honey_super ?? 0) -
+    Number(summary?.total_removed_honey_super ?? 0);
 
   kpiGrid([
     {
@@ -305,11 +303,11 @@ export async function generateUserSummaryPdf({
     },
     {
       label: "TOTAL DE ENXAMES",
-      value: totalSwarms,
+      value: integer(totalSwarms),
     },
     {
       label: "TOTAL DE MELGUEIRAS",
-      value: totalHoneySupers,
+      value: integer(totalHoneySupers),
     },
     {
       label: "TOTAL DE VISITAS",
