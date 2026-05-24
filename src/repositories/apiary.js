@@ -177,4 +177,12 @@ export default class ApiaryRepository {
     );
     return rowCount > 0;
   }
+
+  async updateImageLink(id, userId, imageLink) {
+    const { rows } = await this._db.query(
+      `UPDATE apiaries SET image_link = $1 WHERE id = $2 AND user_id = $3 RETURNING *`,
+      [imageLink, id, userId],
+    );
+    return rows[0] ?? null;
+  }
 }

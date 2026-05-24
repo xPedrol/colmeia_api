@@ -11,6 +11,12 @@ import MailService from "./services/mail.js";
 import { NewsScrapper } from "./services/newsScrapper.js";
 import { generateUserSummaryPdf } from "./services/pdfService.js";
 import {
+  compressImage,
+  deleteFromSupabase,
+  getApiaryImageUrl,
+  uploadToSupabase,
+} from "./services/imageService.js";
+import {
   compareResetCode,
   generateResetCode,
   getResetCodeExpiryDate,
@@ -346,6 +352,51 @@ export default async function routes(fastify) {
     const deleted = await apiaryRepo.delete(request.params.id, request.user.id);
     if (!deleted)
       return reply.code(404).send({ error: "Apiário não encontrado" });
+    return reply.code(204).send();
+  });
+
+  fastify.get("/apiaries/:id/image", async (request, reply) => {
+    const url = getApiaryImageUrl(request.params.id);
+    const response = await fetch(url);
+    if (!response.ok)
+      return reply.code(404).send({ error: "Imagem não encontrada" });
+    const buffer = await response.arrayBuffer();
+    reply.header("Content-Type", "image/jpeg");
+    reply.header("Cache-Control", "public, max-age=86400");
+    return reply.send(Buffer.from(buffer));
+  });
+
+  fastify.post("/apiaries/:id/image", async (request, reply) => {
+    const apiary = await apiaryRepo.getById(request.params.id, request.user.id);
+    if (!apiary)
+      return reply.code(404).send({ error: "Apiário não encontrado" });
+
+    const data = await request.file();
+    if (!data) return reply.code(400).send({ error: "Nenhuma imagem enviada" });
+
+    const buffer = await data.toBuffer();
+    const compressed = await compressImage(buffer);
+    await uploadToSupabase(request.params.id, compressed);
+
+    const proxyUrl = `${fastify.config.APP_URL}/apiaries/${request.params.id}/image`;
+
+    await apiaryRepo.updateImageLink(
+      request.params.id,
+      request.user.id,
+      proxyUrl,
+    );
+
+    return reply.code(200).send({ url: proxyUrl });
+  });
+
+  fastify.delete("/apiaries/:id/image", async (request, reply) => {
+    const apiary = await apiaryRepo.getById(request.params.id, request.user.id);
+    if (!apiary)
+      return reply.code(404).send({ error: "Apiário não encontrado" });
+
+    await deleteFromSupabase(request.params.id);
+    await apiaryRepo.updateImageLink(request.params.id, request.user.id, null);
+
     return reply.code(204).send();
   });
 

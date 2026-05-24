@@ -1,6 +1,7 @@
 // Import the framework and instantiate it
 import fastifyEnv from "@fastify/env";
 import jwt from "@fastify/jwt";
+import multipart from "@fastify/multipart";
 import Fastify from "fastify";
 import database from "./database.js";
 import middlewares from "./middlewares.js";
@@ -16,6 +17,7 @@ await fastify.register(fastifyEnv, config);
 fastify.register(jwt, {
   secret: fastify.config.JWT_SECRET,
 });
+fastify.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } });
 fastify.register(database);
 fastify.register(middlewares);
 fastify.register(routes);
