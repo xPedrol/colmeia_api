@@ -335,7 +335,9 @@ export async function generateUserSummaryPdf({
   });
 
   // ── Pre-fetch charts (parallel, only when data exists) ────────────────
-  const topCategories = (expensesByCategory ?? []).slice(0, 10);
+  const topCategories = (expensesByCategory ?? [])
+    .filter((c) => Number(c.total_value ?? 0) > 0)
+    .slice(0, 10);
 
   const [expensesImg, monthlyImg] = await Promise.all([
     topCategories.length > 0
