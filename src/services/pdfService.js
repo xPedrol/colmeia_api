@@ -390,7 +390,7 @@ export async function generateUserSummaryPdf({
       resetRows();
       for (const m of monthlyVisits) {
         ensureSpace(ROW_H);
-        drawRow(m.month, integer(m.total_visits ?? 0));
+        drawRow(MONTHS_PT[m.month] ?? m.month, integer(m.total_visits ?? 0));
       }
     }
 
