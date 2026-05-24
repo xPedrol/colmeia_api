@@ -58,7 +58,11 @@ export async function generateUserSummaryPdf({
   userId,
   year = new Date().getFullYear(),
 }) {
-  const doc = new PDFDocument({ size: "A4", margin: MARGIN, bufferPages: true });
+  const doc = new PDFDocument({
+    size: "A4",
+    margins: { top: MARGIN, bottom: 30, left: MARGIN, right: MARGIN },
+    bufferPages: true,
+  });
   const buffers = [];
   doc.on("data", (b) => buffers.push(b));
 
