@@ -410,28 +410,28 @@ export async function generateUserSummaryPdf({
   const range = doc.bufferedPageRange();
   const total = range.count;
 
-  for (let i = range.start; i < range.start + total; i++) {
-    doc.switchToPage(i);
-    doc
-      .moveTo(MARGIN, FOOTER_Y - 8)
-      .lineTo(PAGE_W - MARGIN, FOOTER_Y - 8)
-      .strokeColor(C.border)
-      .lineWidth(0.5)
-      .stroke();
-    doc
-      .font("Helvetica")
-      .fontSize(8)
-      .fillColor(C.gray)
-      .text(`ColmeiaOS · Relatório Anual ${year}`, MARGIN, FOOTER_Y, {
-        width: CONTENT_W / 2,
-        lineBreak: false,
-      });
-    doc.text(`Página ${i + 1} de ${total}`, MARGIN + CONTENT_W / 2, FOOTER_Y, {
-      width: CONTENT_W / 2,
-      align: "right",
-      lineBreak: false,
-    });
-  }
+  //   for (let i = range.start; i < range.start + total; i++) {
+  //     doc.switchToPage(i);
+  //     doc
+  //       .moveTo(MARGIN, FOOTER_Y - 8)
+  //       .lineTo(PAGE_W - MARGIN, FOOTER_Y - 8)
+  //       .strokeColor(C.border)
+  //       .lineWidth(0.5)
+  //       .stroke();
+  //     doc
+  //       .font("Helvetica")
+  //       .fontSize(8)
+  //       .fillColor(C.gray)
+  //       .text(`ColmeiaOS · Relatório Anual ${year}`, MARGIN, FOOTER_Y, {
+  //         width: CONTENT_W / 2,
+  //         lineBreak: false,
+  //       });
+  //     doc.text(`Página ${i + 1} de ${total}`, MARGIN + CONTENT_W / 2, FOOTER_Y, {
+  //       width: CONTENT_W / 2,
+  //       align: "right",
+  //       lineBreak: false,
+  //     });
+  //   }
 
   doc.end();
   await new Promise((res) => doc.on("end", res));
