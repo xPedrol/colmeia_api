@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "set-app-version": "node scripts/set-app-version.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

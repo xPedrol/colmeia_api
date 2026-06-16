@@ -6,6 +6,7 @@ import UserRepository from "./repositories/user.js";
 import VisitRepository from "./repositories/visit.js";
 import ColmeiaRepository from "./repositories/colmeia.js";
 import { comparePassword, hashPassword } from "./utils/bcrypt.js";
+import AppVersionRepository from "./repositories/appVersion.js";
 import DashboardRepository from "./repositories/dashboard.js";
 import MailService from "./services/mail.js";
 import { NewsScrapper } from "./services/newsScrapper.js";
@@ -54,6 +55,7 @@ export default async function routes(fastify) {
   const expenseRepo = new ExpenseRepository(fastify.pg);
   const saleRepo = new SaleRepository(fastify.pg);
   const dashboardRepo = new DashboardRepository(fastify.pg);
+  const appVersionRepo = new AppVersionRepository(fastify.pg);
   const newsScrapper = new NewsScrapper(
     "https://globorural.globo.com/ultimas-noticias/",
     "https://revistacultivar.com.br/noticias?categoria=apicultura",
@@ -664,6 +666,27 @@ export default async function routes(fastify) {
     if (!deleted)
       return reply.code(404).send({ error: "Venda não encontrada" });
     return reply.code(204).send();
+  });
+
+  // ─── APP VERSION ───────────────────────────────────────────────────────────
+
+  fastify.get("/app-version", async (_request, reply) => {
+    const appVersion = await appVersionRepo.get();
+    if (!appVersion) {
+      return reply.code(404).send({ error: "Versão do app não configurada" });
+    }
+    return reply.send(appVersion);
+  });
+
+  fastify.put("/app-version", async (request, reply) => {
+    const { version, apkUrl } = request.body ?? {};
+    if (!version || !apkUrl) {
+      return reply
+        .code(400)
+        .send({ error: "version e apkUrl são obrigatórios" });
+    }
+    const appVersion = await appVersionRepo.upsert(version, apkUrl);
+    return reply.send(appVersion);
   });
 
   // ─── NEWS ──────────────────────────────────────────────────────────────────
